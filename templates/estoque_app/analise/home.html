@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Análise - Estoque{% endblock %}
+{% block page_title %}Análise{% endblock %}
+
+{% block content %}
+<!-- Filtro de período -->
+<div class="card card-dashboard mb-4">
+    <div class="card-body py-3">
+        <span class="me-2 text-muted small">Período:</span>
+        <a href="{% url 'estoque_app:analise_home' %}?periodo=mes" class="btn btn-sm {% if periodo == 'mes' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Mês atual</a>
+        <a href="{% url 'estoque_app:analise_home' %}?periodo=trimestre" class="btn btn-sm {% if periodo == 'trimestre' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Últimos 3 meses</a>
+        <a href="{% url 'estoque_app:analise_home' %}?periodo=geral" class="btn btn-sm {% if periodo == 'geral' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Todo o período</a>
+    </div>
+</div>
+
+<!-- Bloco 1 — Cards do período -->
+<div class="section-title">Resumo do período</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-currency-dollar"></i></div>
+                    <div>
+                        <div class="value">R$ {{ faturamento|floatformat:2 }}</div>
+                        <div class="label">Faturamento</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-danger"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="value">R$ {{ despesas|floatformat:2 }}</div>
+                        <div class="label">Despesas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-success"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div>
+                        <div class="value {% if lucro >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ lucro|floatformat:2 }}</div>
+                        <div class="label">Lucro</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-cart-check"></i></div>
+                    <div>
+                        <div class="value">{{ total_vendas }}</div>
+                        <div class="label">Quantidade de vendas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 2 — Gráficos -->
+<div class="section-title">Gráficos do período</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Faturamento no período</h5>
+                <div style="height: 280px;"><canvas id="chart-analise-faturamento"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Despesas no período</h5>
+                <div style="height: 280px;"><canvas id="chart-analise-despesas"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Comparativo Faturamento x Despesas</h5>
+                <div style="height: 280px;"><canvas id="chart-analise-comparativo"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 3 — Insights do período -->
+<div class="section-title">Insights do período</div>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Produto mais vendido</h6>
+                {% if produto_mais_vendido %}
+                <p class="mb-0 fw-bold">{{ produto_mais_vendido.nome }}</p>
+                <p class="small text-muted mb-0">Quantidade: {{ produto_mais_vendido.quantidade }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Sem dados no período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Maior venda</h6>
+                {% if maior_venda %}
+                <p class="mb-0 fw-bold">R$ {{ maior_venda.valor|floatformat:2 }}</p>
+                <p class="small text-muted mb-0">{{ maior_venda.data_formatada }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Sem dados no período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Maior despesa</h6>
+                {% if maior_despesa %}
+                <p class="mb-0 fw-bold">{{ maior_despesa.descricao }}</p>
+                <p class="small text-muted mb-0">R$ {{ maior_despesa.valor|floatformat:2 }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Sem dados no período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ grafico_faturamento|json_script:"analise-faturamento-data" }}
+{{ grafico_despesas|json_script:"analise-despesas-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    var fatEl = document.getElementById('analise-faturamento-data');
+    var despEl = document.getElementById('analise-despesas-data');
+    var fatData = fatEl ? JSON.parse(fatEl.textContent) : [];
+    var despData = despEl ? JSON.parse(despEl.textContent) : [];
+    var fatMap = {}; fatData.forEach(function(d) { fatMap[d.data] = d.valor; });
+    var despMap = {}; despData.forEach(function(d) { despMap[d.data] = d.valor; });
+    var allLabels = [];
+    fatData.forEach(function(d) { if (allLabels.indexOf(d.data) === -1) allLabels.push(d.data); });
+    despData.forEach(function(d) { if (allLabels.indexOf(d.data) === -1) allLabels.push(d.data); });
+    allLabels.sort();
+    var fatValues = allLabels.map(function(l) { return fatMap[l] || 0; });
+    var despValues = allLabels.map(function(l) { return despMap[l] || 0; });
+
+    if (fatData.length && document.getElementById('chart-analise-faturamento')) {
+        new Chart(document.getElementById('chart-analise-faturamento'), {
+            type: 'line',
+            data: { labels: fatData.map(function(d) { return d.data; }), datasets: [{ label: 'Faturamento (R$)', data: fatData.map(function(d) { return d.valor; }), borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (despData.length !== 0 && document.getElementById('chart-analise-despesas')) {
+        new Chart(document.getElementById('chart-analise-despesas'), {
+            type: 'line',
+            data: { labels: despData.map(function(d) { return d.data; }), datasets: [{ label: 'Despesas (R$)', data: despData.map(function(d) { return d.valor; }), borderColor: '#fd7e14', backgroundColor: 'rgba(253, 126, 20, 0.1)', fill: true, tension: 0.2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (allLabels.length && document.getElementById('chart-analise-comparativo')) {
+        new Chart(document.getElementById('chart-analise-comparativo'), {
+            type: 'line',
+            data: {
+                labels: allLabels,
+                datasets: [
+                    { label: 'Faturamento (R$)', data: fatValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'Despesas (R$)', data: despValues, borderColor: '#fd7e14', backgroundColor: 'rgba(253, 126, 20, 0.1)', fill: true, tension: 0.2 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+})();
+</script>
+{% endblock %}

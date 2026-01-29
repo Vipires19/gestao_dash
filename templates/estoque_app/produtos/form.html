@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if produto %}Editar{% else %}Novo{% endif %} Produto - Estoque{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'estoque_app:produto_list' %}" class="text-gray-600 hover:text-gray-900">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <h1 class="text-xl font-semibold text-gray-900">{% if produto %}Editar{% else %}Novo{% endif %} Produto</h1>
+                </div>
+                <a href="{% url 'estoque_app:categoria_list' %}"
+                   class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                    Gerenciar Categorias
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Mensagens -->
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="mb-2 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">{% if produto %}Editar{% else %}Cadastrar{% endif %} Produto</h2>
+            
+            <form method="POST" action="{% if produto %}{% url 'estoque_app:produto_edit' produto.id %}{% else %}{% url 'estoque_app:produto_create' %}{% endif %}">
+                {% csrf_token %}
+                
+                <div class="space-y-6">
+                    <!-- Código -->
+                    <div>
+                        <label for="codigo" class="block text-sm font-medium text-gray-700 mb-2">
+                            Código <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="codigo" name="codigo" required
+                               value="{% if form_data.codigo %}{{ form_data.codigo }}{% elif produto %}{{ produto.codigo }}{% endif %}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+                               placeholder="Ex: PROD001">
+                        <p class="mt-1 text-sm text-gray-500">Código único do produto</p>
+                    </div>
+                    
+                    <!-- Nome -->
+                    <div>
+                        <label for="nome" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome do Produto <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="nome" name="nome" required
+                               value="{% if form_data.nome %}{{ form_data.nome }}{% elif produto %}{{ produto.nome }}{% endif %}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+                               placeholder="Ex: Produto Exemplo">
+                        <p class="mt-1 text-sm text-gray-500">Nome descritivo do produto</p>
+                    </div>
+                    
+                    <!-- Categoria -->
+                    <div>
+                        <label for="categoria_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Categoria <span class="text-red-500">*</span>
+                        </label>
+                        <select id="categoria_id" name="categoria_id" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base">
+                            <option value="">Selecione uma categoria...</option>
+                            {% for categoria in categorias %}
+                            <option value="{{ categoria.id }}" {% if form_data.categoria_id == categoria.id or produto and produto.categoria_id == categoria.id %}selected{% endif %}>
+                                {{ categoria.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Selecione a categoria do produto. 
+                            <a href="{% url 'estoque_app:categoria_create' %}" class="text-primary-600 hover:text-primary-800">Cadastrar nova categoria</a>
+                        </p>
+                    </div>
+                    
+                    <!-- Preços -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="preco_compra" class="block text-sm font-medium text-gray-700 mb-2">
+                                Preço de Compra (R$) <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">R$</span>
+                                <input type="number" id="preco_compra" name="preco_compra" step="0.01" min="0" required
+                                       value="{% if form_data.preco_compra %}{{ form_data.preco_compra }}{% elif produto %}{{ produto.preco_compra }}{% else %}0.00{% endif %}"
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="preco_venda" class="block text-sm font-medium text-gray-700 mb-2">
+                                Preço de Venda (R$) <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">R$</span>
+                                <input type="number" id="preco_venda" name="preco_venda" step="0.01" min="0" required
+                                       value="{% if form_data.preco_venda %}{{ form_data.preco_venda }}{% elif produto %}{{ produto.preco_venda }}{% else %}0.00{% endif %}"
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quantidade -->
+                    <div>
+                        <label for="quantidade" class="block text-sm font-medium text-gray-700 mb-2">
+                            Quantidade <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="quantidade" name="quantidade" min="0" required
+                               value="{% if form_data.quantidade %}{{ form_data.quantidade }}{% elif produto %}{{ produto.quantidade }}{% else %}0{% endif %}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+                               placeholder="0">
+                        <p class="mt-1 text-sm text-gray-500">Quantidade em estoque</p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex space-x-4">
+                    <button type="submit"
+                            class="flex-1 px-6 py-3 bg-primary-600 text-white text-base font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                        {% if produto %}Atualizar{% else %}Salvar{% endif %} Produto
+                    </button>
+                    <a href="{% url 'estoque_app:produto_list' %}"
+                       class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 text-base font-medium rounded-lg hover:bg-gray-300 transition-colors text-center">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

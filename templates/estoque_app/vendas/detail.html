@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhe da Venda{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <h1 class="text-xl font-semibold text-gray-900">Detalhe da Venda</h1>
+                <a href="{% url 'estoque_app:venda_list' %}"
+                   class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                    Voltar para Vendas
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="mb-2 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Informações da Venda</h2>
+            <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">ID da venda</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ venda.id }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Data da venda</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {% if venda.created_at %}
+                            {{ venda.created_at|date:"d/m/Y H:i:s" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Valor total</dt>
+                    <dd class="mt-1 text-lg font-semibold text-gray-900">R$ {{ venda.valor_total_venda|floatformat:2 }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Itens da Venda</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor Unitário</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantidade</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in venda.itens %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm text-gray-900">{{ item.codigo }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">{{ item.nome }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-right">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ item.quantidade }}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">R$ {{ item.valor_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                <a href="{% url 'estoque_app:venda_comprovante' venda.id %}"
+                   class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700">
+                    Baixar Comprovante (PDF)
+                </a>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

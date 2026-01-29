@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Estoque{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Bloco 1 — Cards principais -->
+<div class="section-title">Resumo do dia</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-currency-dollar"></i></div>
+                    <div>
+                        <div class="value">R$ {{ faturamento_hoje|floatformat:2 }}</div>
+                        <div class="label">Faturamento hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-danger"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="value">R$ {{ despesas_hoje|floatformat:2 }}</div>
+                        <div class="label">Despesas hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-success"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div>
+                        <div class="value {% if lucro_hoje >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ lucro_hoje|floatformat:2 }}</div>
+                        <div class="label">Lucro hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-cart-check"></i></div>
+                    <div>
+                        <div class="value">{{ total_vendas_hoje }}</div>
+                        <div class="label">Vendas hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-box-seam"></i></div>
+                    <div>
+                        <div class="value">{{ total_produtos_vendidos_hoje }}</div>
+                        <div class="label">Produtos vendidos hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-warning"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div>
+                        <div class="value">{{ produtos_estoque_baixo }}</div>
+                        <div class="label">Estoque crítico</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 2 — Gráficos -->
+<div class="section-title">Últimos 7 dias</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Faturamento nos últimos 7 dias</h5>
+                <div style="height: 280px;"><canvas id="chart-faturamento-7d"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Despesas nos últimos 7 dias</h5>
+                <div style="height: 280px;"><canvas id="chart-despesas-7d"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Comparativo Faturamento x Despesas</h5>
+                <div style="height: 280px;"><canvas id="chart-comparativo"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Top 5 produtos mais vendidos</h5>
+                <div style="height: 280px;"><canvas id="chart-top5-produtos"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 3 — Listas e insights -->
+<div class="section-title">Consulta rápida</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Últimas vendas</h5>
+                {% if ultimas_vendas %}
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Qtd. itens</th>
+                                <th>Valor total</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for venda in ultimas_vendas %}
+                            <tr>
+                                <td>{{ venda.data_formatada }}</td>
+                                <td>{{ venda.quantidade_itens }}</td>
+                                <td>R$ {{ venda.valor_total_venda|floatformat:2 }}</td>
+                                <td><a href="{% url 'estoque_app:venda_detail' venda.id %}" class="text-primary text-decoration-none">Ver detalhes</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhuma venda registrada.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Produto mais vendido hoje</h6>
+                {% if produto_mais_vendido %}
+                <p class="mb-0 fw-bold">{{ produto_mais_vendido.nome }}</p>
+                <p class="small text-muted mb-0">Quantidade: {{ produto_mais_vendido.quantidade }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma venda realizada hoje</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card card-dashboard mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Maior venda do dia</h6>
+                {% if maior_venda_hoje %}
+                <p class="mb-0 fw-bold">R$ {{ maior_venda_hoje.valor|floatformat:2 }}</p>
+                <p class="small text-muted mb-0">Às {{ maior_venda_hoje.hora }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma venda realizada hoje</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card card-dashboard mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Maior despesa do dia</h6>
+                {% if maior_despesa_hoje %}
+                <p class="mb-0 fw-bold">{{ maior_despesa_hoje.descricao }}</p>
+                <p class="small text-muted mb-0">R$ {{ maior_despesa_hoje.valor|floatformat:2 }}</p>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma despesa registrada hoje</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Situação do dia</h6>
+                <p class="mb-0 fw-bold {% if lucro_hoje > 0 %}text-success{% else %}text-danger{% endif %}">{{ situacao_dia }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 4 — Estoque crítico e alertas -->
+<div class="section-title">Estoque crítico e alertas</div>
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card card-dashboard border-danger">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Produtos com estoque crítico</h5>
+                {% if produtos_criticos %}
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover">
+                        <thead class="table-danger">
+                            <tr>
+                                <th>Código</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in produtos_criticos %}
+                            <tr class="{% if p.quantidade <= 1 %}table-danger{% endif %}">
+                                <td>{{ p.codigo }}</td>
+                                <td>{{ p.nome }}</td>
+                                <td><span class="badge bg-danger">{{ p.quantidade }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhum produto com estoque crítico 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard border-warning">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Alertas</h5>
+                {% if alertas_estoque %}
+                <ul class="list-unstyled mb-0">
+                    {% for alerta in alertas_estoque %}
+                    <li class="d-flex align-items-start gap-2 mb-2 small">
+                        {% if "1 unidade" in alerta or "prejuízo" in alerta %}
+                        <i class="bi bi-exclamation-octagon-fill text-danger mt-1"></i>
+                        {% else %}
+                        <i class="bi bi-exclamation-triangle-fill text-warning mt-1"></i>
+                        {% endif %}
+                        <span>{{ alerta }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhum alerta.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ grafico_faturamento_7_dias|json_script:"faturamento-7d-data" }}
+{{ grafico_despesas_7_dias|json_script:"despesas-7d-data" }}
+{{ top_5_produtos|json_script:"top5-produtos-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    var faturamentoEl = document.getElementById('faturamento-7d-data');
+    var despesasEl = document.getElementById('despesas-7d-data');
+    var top5El = document.getElementById('top5-produtos-data');
+    var faturamentoData = faturamentoEl ? JSON.parse(faturamentoEl.textContent) : [];
+    var despesasData = despesasEl ? JSON.parse(despesasEl.textContent) : [];
+    var top5Data = top5El ? JSON.parse(top5El.textContent) : [];
+    var labels7d = faturamentoData.length ? faturamentoData.map(function(d) { return d.data; }) : (despesasData.length ? despesasData.map(function(d) { return d.data; }) : []);
+
+    if (faturamentoData.length && document.getElementById('chart-faturamento-7d')) {
+        new Chart(document.getElementById('chart-faturamento-7d'), {
+            type: 'line',
+            data: {
+                labels: faturamentoData.map(function(d) { return d.data; }),
+                datasets: [{ label: 'Faturamento (R$)', data: faturamentoData.map(function(d) { return d.valor; }), borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (despesasData.length !== 0 && document.getElementById('chart-despesas-7d')) {
+        new Chart(document.getElementById('chart-despesas-7d'), {
+            type: 'line',
+            data: {
+                labels: despesasData.map(function(d) { return d.data; }),
+                datasets: [{ label: 'Despesas (R$)', data: despesasData.map(function(d) { return d.valor; }), borderColor: '#fd7e14', backgroundColor: 'rgba(253, 126, 20, 0.1)', fill: true, tension: 0.2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (labels7d.length && document.getElementById('chart-comparativo')) {
+        var fatValues = faturamentoData.length ? faturamentoData.map(function(d) { return d.valor; }) : labels7d.map(function() { return 0; });
+        var despValues = despesasData.length ? despesasData.map(function(d) { return d.valor; }) : labels7d.map(function() { return 0; });
+        new Chart(document.getElementById('chart-comparativo'), {
+            type: 'line',
+            data: {
+                labels: labels7d,
+                datasets: [
+                    { label: 'Faturamento (R$)', data: fatValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'Despesas (R$)', data: despValues, borderColor: '#fd7e14', backgroundColor: 'rgba(253, 126, 20, 0.1)', fill: true, tension: 0.2 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (top5Data.length && document.getElementById('chart-top5-produtos')) {
+        new Chart(document.getElementById('chart-top5-produtos'), {
+            type: 'bar',
+            data: {
+                labels: top5Data.map(function(d) { return d.nome; }),
+                datasets: [{ label: 'Quantidade vendida', data: top5Data.map(function(d) { return d.quantidade; }), backgroundColor: 'rgba(13, 110, 253, 0.7)', borderColor: '#0d6efd', borderWidth: 1 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+})();
+</script>
+{% endblock %}

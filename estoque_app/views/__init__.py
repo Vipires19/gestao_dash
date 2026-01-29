@@ -1,0 +1,3 @@
+"""
+Views do app estoque.
+"""
