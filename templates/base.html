@@ -51,6 +51,42 @@
         .sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,.05); }
         .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.1); border-left-color: #007bff; }
         .sidebar .nav-link i { font-size: 1.1rem; width: 1.5rem; text-align: center; }
+        /* Dropdown setor / submenu */
+        .sidebar-dropdown { margin: 0; }
+        .sidebar-dropdown summary {
+            list-style: none;
+            cursor: pointer;
+            color: rgba(255,255,255,.85);
+            padding: 0.6rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            border-left: 3px solid transparent;
+            user-select: none;
+        }
+        .sidebar-dropdown summary::-webkit-details-marker { display: none; }
+        .sidebar-dropdown summary:hover { color: #fff; background: rgba(255,255,255,.05); }
+        .sidebar-dropdown summary i { font-size: 1rem; width: 1.5rem; text-align: center; transition: transform 0.2s; }
+        .sidebar-dropdown[open] > summary { color: #fff; background: rgba(255,255,255,.08); border-left-color: rgba(255,255,255,.3); }
+        .sidebar-dropdown[open] > summary i.bi-chevron-down { transform: rotate(180deg); }
+        .sidebar-sector-content { padding-left: 0; }
+        .sidebar-submenu { margin: 0; border-left: 2px solid rgba(255,255,255,.1); margin-left: 1.25rem; }
+        .sidebar-submenu summary {
+            list-style: none;
+            cursor: pointer;
+            color: rgba(255,255,255,.75);
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .sidebar-submenu summary::-webkit-details-marker { display: none; }
+        .sidebar-submenu summary:hover { color: #fff; background: rgba(255,255,255,.05); }
+        .sidebar-submenu[open] > summary { color: #fff; background: rgba(255,255,255,.06); }
+        .sidebar-submenu-inner { list-style: none; margin: 0; padding: 0 0 0.25rem 0; }
+        .sidebar-submenu-inner li { margin: 0; }
+        .sidebar-submenu-inner .nav-link { padding: 0.45rem 0.75rem 0.45rem 2rem; font-size: 0.9rem; }
         .main-wrapper {
             flex: 1;
             margin-left: var(--sidebar-width);
@@ -125,17 +161,14 @@
                 <a class="nav-link" href="{% url 'estoque_app:analise_home' %}">
                     <i class="bi bi-graph-up"></i> Análise
                 </a>
-                <a class="nav-link" href="{% url 'estoque_app:venda_list' %}">
-                    <i class="bi bi-receipt"></i> Vendas
-                </a>
-                <a class="nav-link" href="{% url 'estoque_app:venda_nova' %}">
-                    <i class="bi bi-cart-plus"></i> Nova Venda
-                </a>
                 <a class="nav-link" href="{% url 'estoque_app:produto_list' %}">
                     <i class="bi bi-boxes"></i> Produtos
                 </a>
                 <a class="nav-link" href="{% url 'estoque_app:categoria_list' %}">
                     <i class="bi bi-tags"></i> Categorias
+                </a>
+                <a class="nav-link" href="{% url 'estoque_app:venda_list' %}">
+                    <i class="bi bi-receipt"></i> Vendas
                 </a>
                 <a class="nav-link" href="{% url 'estoque_app:despesa_list' %}">
                     <i class="bi bi-wallet2"></i> Despesas
@@ -143,6 +176,75 @@
                 <a class="nav-link" href="{% url 'estoque_app:despesa_create' %}">
                     <i class="bi bi-plus-circle"></i> Registrar Despesa
                 </a>
+
+                <div class="sidebar-separator mt-2 pt-2 border-top border-secondary"></div>
+
+                <details class="sidebar-dropdown" id="setor-emporium-prime">
+                    <summary class="sidebar-sector-toggle">
+                        <i class="bi bi-chevron-down"></i>
+                        <span>EMPORIUM PRIME</span>
+                    </summary>
+                    <div class="sidebar-sector-content">
+                        <a class="nav-link" href="{% url 'estoque_app:financeiro_emporium_dashboard' %}"><i class="bi bi-graph-up-arrow"></i> Análise operacional</a>
+                        <details class="sidebar-submenu" id="submenu-operacao">
+                            <summary class="sidebar-submenu-toggle">
+                                <i class="bi bi-chevron-down"></i>
+                                <span>Operação</span>
+                            </summary>
+                            <ul class="sidebar-submenu-inner">
+                                <li><a class="nav-link" href="{% url 'estoque_app:entrada_list' %}"><i class="bi bi-box-arrow-in-down"></i> Entradas de estoque</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:estoque_emporium' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:processamento_list' %}"><i class="bi bi-scissors"></i> Processamento</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:precificacao_list' %}"><i class="bi bi-tag"></i> Precificação</a></li>
+                            </ul>
+                        </details>
+                        <details class="sidebar-submenu" id="submenu-vendas">
+                            <summary class="sidebar-submenu-toggle">
+                                <i class="bi bi-chevron-down"></i>
+                                <span>Vendas</span>
+                            </summary>
+                            <ul class="sidebar-submenu-inner">
+                                <li><a class="nav-link" href="{% url 'estoque_app:venda_processado_nova' %}"><i class="bi bi-cart-plus"></i> Vendas Processados</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:venda_caixa_nova' %}"><i class="bi bi-box-seam"></i> Vendas Atacados</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:venda_emporium_historico' %}"><i class="bi bi-receipt"></i> Histórico</a></li>
+                            </ul>
+                        </details>
+                        <details class="sidebar-submenu" id="submenu-financeiro">
+                            <summary class="sidebar-submenu-toggle">
+                                <i class="bi bi-chevron-down"></i>
+                                <span>Financeiro</span>
+                            </summary>
+                            <ul class="sidebar-submenu-inner">
+                                <li><a class="nav-link" href="{% url 'estoque_app:titulos_pendentes' %}"><i class="bi bi-clock-history"></i> Títulos pendentes</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:titulos_pagos' %}"><i class="bi bi-check2-circle"></i> Títulos pagos</a></li>
+                            </ul>
+                        </details>
+                    </div>
+                </details>
+                <details class="sidebar-dropdown" id="setor-paes">
+                    <summary class="sidebar-sector-toggle">
+                        <i class="bi bi-chevron-down"></i>
+                        <span>PÃES</span>
+                    </summary>
+                    <div class="sidebar-sector-content">
+                        <ul class="sidebar-submenu-inner">
+                            <li><a class="nav-link" href="{% url 'estoque_app:paes_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                            <li><a class="nav-link" href="{% url 'estoque_app:paes_clientes_list' %}"><i class="bi bi-people"></i> Clientes</a></li>
+                            <li><a class="nav-link" href="{% url 'estoque_app:paes_planos_list' %}"><i class="bi bi-journal-text"></i> Planos</a></li>
+                            <li><a class="nav-link" href="{% url 'estoque_app:paes_entregas_list' %}"><i class="bi bi-truck"></i> Entregas</a></li>
+                        </ul>
+                        <details class="sidebar-submenu" id="submenu-paes-financeiro">
+                            <summary class="sidebar-submenu-toggle">
+                                <i class="bi bi-chevron-down"></i>
+                                <span>Financeiro</span>
+                            </summary>
+                            <ul class="sidebar-submenu-inner">
+                                <li><a class="nav-link" href="{% url 'estoque_app:paes_financeiro_pendentes' %}"><i class="bi bi-clock-history"></i> Títulos pendentes</a></li>
+                                <li><a class="nav-link" href="{% url 'estoque_app:paes_financeiro_pagos' %}"><i class="bi bi-check2-circle"></i> Títulos pagos</a></li>
+                            </ul>
+                        </details>
+                    </div>
+                </details>
             </nav>
         </aside>
         <div class="main-wrapper">
@@ -161,9 +263,20 @@
         var path = (window.location.pathname || '/').replace(/\/$/, '') || '/';
         var links = Array.from(document.querySelectorAll('.sidebar .nav-link')).filter(function(a) { return a.getAttribute('href'); });
         links.sort(function(a, b) { return (b.getAttribute('href').length - a.getAttribute('href').length); });
+        var activeLink = null;
         for (var i = 0; i < links.length; i++) {
             var href = links[i].getAttribute('href').replace(/\/$/, '') || '/';
-            if (path === href || path.indexOf(href + '/') === 0) { links[i].classList.add('active'); break; }
+            if (path === href || path.indexOf(href + '/') === 0) {
+                links[i].classList.add('active');
+                activeLink = links[i];
+                break;
+            }
+        }
+        if (activeLink) {
+            var submenu = activeLink.closest('.sidebar-submenu');
+            if (submenu) submenu.setAttribute('open', '');
+            var setor = activeLink.closest('.sidebar-dropdown');
+            if (setor) setor.setAttribute('open', '');
         }
     })();
     </script>

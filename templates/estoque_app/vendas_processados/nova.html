@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Venda (Produtos Processados){% endblock %}
+{% block page_title %}Nova Venda — Produtos Processados{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="form-venda-processado" action="{% url 'estoque_app:venda_processado_nova' %}">
+    {% csrf_token %}
+    <input type="hidden" name="itens_json" id="itens_json" value="">
+
+    <div class="card card-dashboard mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Data da venda <span class="text-danger">*</span></label>
+                    <input type="date" name="data_venda" class="form-control" value="{{ hoje }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de venda</label>
+                    <select name="tipo_venda" class="form-select">
+                        <option value="PROPRIA">Própria</option>
+                        <option value="PARCERIA">Parceria</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <a href="{% url 'estoque_app:venda_processado_list' %}" class="btn btn-outline-secondary">Voltar à listagem</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itens: seleção de produtos derivados -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Itens da venda</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-item"><i class="bi bi-plus"></i> Adicionar item</button>
+        </div>
+        <div class="card-body">
+            {% if not produtos %}
+            <p class="text-muted">Nenhum produto derivado disponível. Registre um processamento em <a href="{% url 'estoque_app:processamento_novo' %}">Operação → Processamentos</a> primeiro.</p>
+            {% endif %}
+            <div class="table-responsive">
+                <table class="table" id="tabela-itens">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produto</th>
+                            <th>Peso disponível (kg)</th>
+                            <th>Custo/kg (R$)</th>
+                            <th>Peso vendido (kg)</th>
+                            <th>Preço/kg (R$)</th>
+                            <th>Subtotal (R$)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-itens">
+                        <tr class="linha-item">
+                            <td>
+                                <select name="produto_id" class="form-select form-select-sm js-produto-select">
+                                    <option value="">Selecione</option>
+                                    {% for p in produtos %}
+                                    <option value="{{ p.id }}" data-nome="{{ p.produto }}" data-peso="{{ p.peso_disponivel_kg }}" data-custo="{{ p.custo_kg }}" data-preco="{{ p.preco_venda_kg|floatformat:2 }}">{{ p.produto }} ({{ p.peso_disponivel_kg }} kg)</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="produto_nome" class="js-produto-nome">
+                            </td>
+                            <td class="js-peso-disp">—</td>
+                            <td class="js-custo-kg">—</td>
+                            <td><input type="text" name="peso_vendido_kg" class="form-control form-control-sm js-peso-vendido" placeholder="0" style="width: 90px;"></td>
+                            <td><input type="text" name="preco_venda_kg" class="form-control form-control-sm js-preco-kg" placeholder="0,00" style="width: 90px;"></td>
+                            <td class="js-subtotal">0,00</td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-item"><i class="bi bi-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Divisão de lucro (opcional) -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Divisão de lucro (opcional)</h5></div>
+        <div class="card-body">
+            <p class="small text-muted">Padrão: Cliente {{ divisao_padrao.cliente_percentual }}% / Sócio {{ divisao_padrao.socio_percentual }}%. Preencha para sobrescrever nesta venda.</p>
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Cliente (%)</label>
+                    <input type="number" name="divisao_cliente_percentual" class="form-control" min="0" max="100" placeholder="{{ divisao_padrao.cliente_percentual }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sócio (%)</label>
+                    <input type="number" name="divisao_socio_percentual" class="form-control" min="0" max="100" placeholder="{{ divisao_padrao.socio_percentual }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo automático -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Resumo</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Valor total venda (R$):</strong> <span id="resumo-venda">0,00</span></div>
+                <div class="col-md-3"><strong>Custo total (R$):</strong> <span id="resumo-custo">0,00</span></div>
+                <div class="col-md-3"><strong>Lucro total (R$):</strong> <span id="resumo-lucro">0,00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" name="registrar" class="btn btn-primary">Registrar venda</button>
+        <a href="{% url 'estoque_app:venda_processado_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    function num(x) { return parseFloat(String(x).replace(',', '.')) || 0; }
+
+    var produtosData = [
+        {% for p in produtos %}
+        { id: "{{ p.id|default:''|escapejs }}", nome: "{{ p.produto|default:''|escapejs }}", peso: "{{ p.peso_disponivel_kg|default:0 }}", custo: "{{ p.custo_kg|default:0 }}", preco: "{{ p.preco_venda_kg|default:0|floatformat:2 }}" }{% if not forloop.last %},{% endif %}
+        {% empty %}
+        {% endfor %}
+    ];
+    if (typeof produtosData === 'undefined' || !Array.isArray(produtosData)) produtosData = [];
+
+    function optionHtml(p) {
+        if (!p || p.id === undefined) return '';
+        var id = String(p.id || '');
+        var nome = String(p.nome || p.produto || '');
+        var peso = num(p.peso);
+        var custo = num(p.custo);
+        var preco = (p.preco != null && p.preco !== '') ? String(p.preco).replace(',', '.') : '';
+        return '<option value="' + id.replace(/"/g, '&quot;') + '" data-nome="' + nome.replace(/"/g, '&quot;') + '" data-peso="' + peso + '" data-custo="' + custo + '" data-preco="' + preco + '">' + nome + ' (' + peso + ' kg)</option>';
+    }
+
+    function atualizarLinha(tr) {
+        if (!tr) return;
+        var sel = tr.querySelector('.js-produto-select');
+        var pesoDisp = tr.querySelector('.js-peso-disp');
+        var custoKg = tr.querySelector('.js-custo-kg');
+        var nomeInp = tr.querySelector('.js-produto-nome');
+        var pesoInp = tr.querySelector('.js-peso-vendido');
+        var precoInp = tr.querySelector('.js-preco-kg');
+        var subtotalEl = tr.querySelector('.js-subtotal');
+        if (!sel) return;
+        var opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value) {
+            if (pesoDisp) pesoDisp.textContent = opt.getAttribute('data-peso') || '—';
+            if (custoKg) custoKg.textContent = opt.getAttribute('data-custo') ? 'R$ ' + num(opt.getAttribute('data-custo')).toFixed(2) : '—';
+            if (nomeInp) nomeInp.value = opt.getAttribute('data-nome') || '';
+            var precoSug = opt.getAttribute('data-preco');
+            if (precoInp && precoSug) precoInp.value = String(precoSug).replace('.', ',');
+        } else {
+            if (pesoDisp) pesoDisp.textContent = '—';
+            if (custoKg) custoKg.textContent = '—';
+            if (nomeInp) nomeInp.value = '';
+        }
+        var peso = pesoInp ? num(pesoInp.value) : 0;
+        var preco = precoInp ? num(precoInp.value) : 0;
+        if (subtotalEl) subtotalEl.textContent = (peso * preco).toFixed(2);
+        atualizarResumo();
+    }
+
+    function atualizarResumo() {
+        var totalVenda = 0, totalCusto = 0;
+        var rows = document.querySelectorAll('#tbody-itens tr');
+        if (rows && rows.length) {
+            rows.forEach(function(tr) {
+                var sel = tr.querySelector('.js-produto-select');
+                var opt = sel && sel.options && sel.options[sel.selectedIndex];
+                var pesoInp = tr.querySelector('.js-peso-vendido');
+                var precoInp = tr.querySelector('.js-preco-kg');
+                var peso = pesoInp ? num(pesoInp.value) : 0;
+                var preco = precoInp ? num(precoInp.value) : 0;
+                var custoKg = opt && opt.getAttribute('data-custo') ? num(opt.getAttribute('data-custo')) : 0;
+                totalVenda += peso * preco;
+                totalCusto += peso * custoKg;
+            });
+        }
+        var resumoVenda = document.getElementById('resumo-venda');
+        var resumoCusto = document.getElementById('resumo-custo');
+        var resumoLucro = document.getElementById('resumo-lucro');
+        if (resumoVenda) resumoVenda.textContent = totalVenda.toFixed(2);
+        if (resumoCusto) resumoCusto.textContent = totalCusto.toFixed(2);
+        if (resumoLucro) resumoLucro.textContent = (totalVenda - totalCusto).toFixed(2);
+    }
+
+    document.getElementById('btn-add-item').addEventListener('click', function() {
+        if (produtosData.length === 0) {
+            alert('Nenhum produto processado disponível. Registre um processamento em Operação → Processamentos para gerar produtos derivados.');
+            return;
+        }
+        var tbody = document.getElementById('tbody-itens');
+        if (!tbody) return;
+        var tr = document.createElement('tr');
+        tr.className = 'linha-item';
+        var opts = produtosData.map(function(p) { return optionHtml(p); }).join('');
+        tr.innerHTML = '<td><select name="produto_id" class="form-select form-select-sm js-produto-select"><option value="">Selecione</option>' + opts + '</select><input type="hidden" name="produto_nome" class="js-produto-nome"></td>' +
+            '<td class="js-peso-disp">—</td><td class="js-custo-kg">—</td>' +
+            '<td><input type="text" name="peso_vendido_kg" class="form-control form-control-sm js-peso-vendido" placeholder="0" style="width: 90px;"></td>' +
+            '<td><input type="text" name="preco_venda_kg" class="form-control form-control-sm js-preco-kg" placeholder="0,00" style="width: 90px;"></td>' +
+            '<td class="js-subtotal">0,00</td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-item"><i class="bi bi-trash"></i></button></td>';
+        tbody.appendChild(tr);
+        var sel = tr.querySelector('.js-produto-select');
+        var pesoInp = tr.querySelector('.js-peso-vendido');
+        var precoInp = tr.querySelector('.js-preco-kg');
+        var btnRemove = tr.querySelector('.btn-remove-item');
+        if (sel) sel.addEventListener('change', function() { atualizarLinha(tr); });
+        if (pesoInp) pesoInp.addEventListener('input', function() { atualizarLinha(tr); });
+        if (precoInp) precoInp.addEventListener('input', function() { atualizarLinha(tr); });
+        if (btnRemove) btnRemove.addEventListener('click', function() {
+            if (tbody.querySelectorAll('tr').length > 1) tr.remove();
+            atualizarResumo();
+        });
+        atualizarLinha(tr);
+    });
+
+    document.getElementById('tbody-itens').addEventListener('change', function(e) {
+        if (e.target.classList.contains('js-produto-select')) atualizarLinha(e.target.closest('tr'));
+    });
+    document.getElementById('tbody-itens').addEventListener('input', function(e) {
+        if (e.target.classList.contains('js-peso-vendido') || e.target.classList.contains('js-preco-kg')) atualizarLinha(e.target.closest('tr'));
+    });
+    document.getElementById('tbody-itens').addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-item')) {
+            var tr = e.target.closest('tr');
+            if (document.querySelectorAll('#tbody-itens tr').length > 1) tr.remove();
+            atualizarResumo();
+        }
+    });
+
+    document.querySelectorAll('#tbody-itens .js-produto-select').forEach(function(sel) {
+        sel.addEventListener('change', function() { atualizarLinha(sel.closest('tr')); });
+    });
+    document.querySelectorAll('#tbody-itens .js-peso-vendido, #tbody-itens .js-preco-kg').forEach(function(inp) {
+        inp.addEventListener('input', function() { atualizarLinha(inp.closest('tr')); });
+    });
+
+    document.getElementById('form-venda-processado').addEventListener('submit', function() {
+        var itens = [];
+        document.querySelectorAll('#tbody-itens tr.linha-item').forEach(function(tr) {
+            var sel = tr.querySelector('.js-produto-select');
+            var opt = sel && sel.options[sel.selectedIndex];
+            var pid = opt && opt.value ? opt.value : '';
+            var nome = opt && opt.getAttribute('data-nome') ? opt.getAttribute('data-nome') : '';
+            var peso = (tr.querySelector('.js-peso-vendido') && tr.querySelector('.js-peso-vendido').value) ? num(tr.querySelector('.js-peso-vendido').value) : 0;
+            var preco = (tr.querySelector('.js-preco-kg') && tr.querySelector('.js-preco-kg').value) ? num(tr.querySelector('.js-preco-kg').value) : 0;
+            if (pid && peso > 0) {
+                itens.push({ produto_id: pid, produto: nome, peso_vendido_kg: peso, preco_venda_kg: preco });
+            }
+        });
+        document.getElementById('itens_json').value = JSON.stringify(itens);
+    });
+
+    atualizarResumo();
+})();
+</script>
+{% endblock %}

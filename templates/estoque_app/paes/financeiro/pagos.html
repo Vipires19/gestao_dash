@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Pães — Títulos pagos{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:paes_financeiro_pendentes' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-clock-history me-1"></i> Títulos pendentes
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0">Filtro por período</h5>
+        <form method="get" action="{% url 'estoque_app:paes_financeiro_pagos' %}" class="d-flex gap-2 align-items-center flex-wrap">
+            <input type="date" name="data_inicio" value="{{ periodo_inicio }}" class="form-control form-control-sm" style="width: auto;">
+            <span>até</span>
+            <input type="date" name="data_fim" value="{{ periodo_fim }}" class="form-control form-control-sm" style="width: auto;">
+            <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+        </form>
+    </div>
+    <div class="card-body">
+        <div class="mb-3 p-2 bg-success bg-opacity-10 rounded">
+            <strong>Total recebido no período:</strong> R$ {{ total_recebido|floatformat:2 }}
+        </div>
+        {% if titulos %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Valor</th>
+                        <th>Vencimento</th>
+                        <th>Data pagamento</th>
+                        <th>Forma</th>
+                        <th>Plano</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in titulos %}
+                    <tr>
+                        <td>{{ t.nome_cliente|default:"—" }}</td>
+                        <td>R$ {{ t.valor|floatformat:2 }}</td>
+                        <td>{{ t.data_vencimento_fmt }}</td>
+                        <td>{{ t.data_pagamento_fmt|default:"—" }}</td>
+                        <td>{{ t.forma_pagamento|default:"—" }}</td>
+                        <td><span class="badge bg-secondary">{{ t.tipo_plano }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum título pago no período selecionado.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

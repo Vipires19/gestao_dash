@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Pães — Títulos a receber{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:paes_financeiro_pagos' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-check2-circle me-1"></i> Títulos pagos
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- BLOCO 3 — Em atraso (destaque vermelho) -->
+{% if em_atraso %}
+<div class="card card-dashboard mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Em atraso</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Valor</th>
+                        <th>Vencimento</th>
+                        <th>Plano</th>
+                        <th>Atraso</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in em_atraso %}
+                    <tr>
+                        <td>{{ t.nome_cliente|default:"—" }}</td>
+                        <td>R$ {{ t.valor|floatformat:2 }}</td>
+                        <td>{{ t.data_vencimento_fmt }}</td>
+                        <td><span class="badge bg-secondary">{{ t.tipo_plano }}</span></td>
+                        <td><span class="badge bg-danger">{{ t.dias_atraso }} dia{{ t.dias_atraso|pluralize }} atrasado</span></td>
+                        <td>
+                            <a href="{% url 'estoque_app:paes_financeiro_registrar' t.id %}" class="btn btn-sm btn-success">Registrar pagamento</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- BLOCO 1 — Receber ESTA SEMANA -->
+<div class="card card-dashboard mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Receber esta semana</h5>
+    </div>
+    <div class="card-body">
+        {% if esta_semana %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Valor</th>
+                        <th>Data de vencimento</th>
+                        <th>Plano</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in esta_semana %}
+                    <tr>
+                        <td>{{ t.nome_cliente|default:"—" }}</td>
+                        <td>R$ {{ t.valor|floatformat:2 }}</td>
+                        <td>{{ t.data_vencimento_fmt }}</td>
+                        <td><span class="badge bg-secondary">{{ t.tipo_plano }}</span></td>
+                        <td>
+                            <a href="{% url 'estoque_app:paes_financeiro_registrar' t.id %}" class="btn btn-sm btn-primary btn-lg">
+                                <i class="bi bi-check-circle me-1"></i> Registrar pagamento
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum título a receber esta semana.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- BLOCO 2 — Semana que vem -->
+<div class="card card-dashboard mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Semana que vem</h5>
+    </div>
+    <div class="card-body">
+        {% if semana_que_vem %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Valor</th>
+                        <th>Data de vencimento</th>
+                        <th>Plano</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in semana_que_vem %}
+                    <tr>
+                        <td>{{ t.nome_cliente|default:"—" }}</td>
+                        <td>R$ {{ t.valor|floatformat:2 }}</td>
+                        <td>{{ t.data_vencimento_fmt }}</td>
+                        <td><span class="badge bg-secondary">{{ t.tipo_plano }}</span></td>
+                        <td>
+                            <a href="{% url 'estoque_app:paes_financeiro_registrar' t.id %}" class="btn btn-sm btn-outline-primary">Registrar pagamento</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum título para a semana que vem.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

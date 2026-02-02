@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico de Vendas — Emporium Prime{% endblock %}
+{% block page_title %}Histórico de Vendas — Emporium Prime{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:venda_processado_nova' %}" class="btn btn-outline-primary btn-sm me-1"><i class="bi bi-cart-plus me-1"></i> Venda Processados</a>
+<a href="{% url 'estoque_app:venda_caixa_nova' %}" class="btn btn-primary btn-sm"><i class="bi bi-box-seam me-1"></i> Venda Atacado</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if vendas %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Data</th>
+                        <th>Valor total (R$)</th>
+                        <th>Tipo de venda</th>
+                        <th>Lucro cliente (R$)</th>
+                        <th>Lucro sócio (R$)</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vendas %}
+                    <tr>
+                        <td>
+                            {% if v.tipo_emporium == 'PROCESSADO' %}
+                            <span class="badge bg-primary">PROCESSADO</span>
+                            {% else %}
+                            <span class="badge bg-info">ATACADO</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ v.data_venda_fmt }}</td>
+                        <td>R$ {{ v.valor_total_venda|floatformat:2 }}</td>
+                        <td><span class="badge bg-secondary">{{ v.tipo_venda }}</span></td>
+                        <td>R$ {{ v.lucro_cliente|floatformat:2 }}</td>
+                        <td>R$ {{ v.lucro_socio|floatformat:2 }}</td>
+                        <td>
+                            <a href="{% url 'estoque_app:emporium_comprovante' venda_id=v.id %}" class="btn btn-sm btn-outline-primary" title="Gerar comprovante (PDF)">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Comprovante
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma venda registrada. Use <a href="{% url 'estoque_app:venda_processado_nova' %}">Venda Processados</a> ou <a href="{% url 'estoque_app:venda_caixa_nova' %}">Venda Atacado</a> para registrar.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

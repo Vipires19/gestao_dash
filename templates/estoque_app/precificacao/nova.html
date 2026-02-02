@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova precificação — Emporium Prime{% endblock %}
+{% block page_title %}Nova precificação{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:precificacao_list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">1. Selecione o produto comercial</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{% url 'estoque_app:precificacao_nova' %}" id="form-analise">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select" id="tipo">
+                        <option value="CAIXA" {% if tipo_selecionado == 'CAIXA' %}selected{% endif %}>Caixa</option>
+                        <option value="PROCESSADO" {% if tipo_selecionado == 'PROCESSADO' %}selected{% endif %}>Processado</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Produto base</label>
+                    <select name="produto_base" class="form-select" id="produto_base">
+                        <option value="">-- Selecione --</option>
+                        {% if tipo_selecionado == 'CAIXA' %}
+                        {% for p in produtos_caixa %}
+                        <option value="{{ p }}" {% if produto_base_selecionado == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                        {% else %}
+                        {% for p in produtos_processado %}
+                        <option value="{{ p }}" {% if produto_base_selecionado == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Analisar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if analise %}
+<div class="card card-dashboard mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">2. Análise automática (somente leitura)</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Custo médio ponderado (R$/kg)</label>
+                <p class="mb-0 fw-bold">R$ {{ analise.custo_medio_ponderado_kg|floatformat:2 }}</p>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Perda média histórica (%)</label>
+                <p class="mb-0 fw-bold">{{ analise.perda_media_percentual|floatformat:2 }}%</p>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Custo real (R$/kg)</label>
+                <p class="mb-0 fw-bold">R$ {{ analise.custo_real_kg|floatformat:2 }}</p>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Quantidade em estoque (kg)</label>
+                <p class="mb-0 fw-bold">{{ analise.quantidade_estoque_kg|floatformat:3 }} kg</p>
+            </div>
+        </div>
+        <p class="small text-muted mt-2 mb-0">{{ analise.qtd_itens }} item(ns) agrupado(s).</p>
+    </div>
+</div>
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">3. Defina preço e salve</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'estoque_app:precificacao_nova' %}" id="form-salvar">
+            {% csrf_token %}
+            <input type="hidden" name="produto_base" value="{{ produto_base_selecionado }}">
+            <input type="hidden" name="tipo" value="{{ tipo_selecionado }}">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nome comercial</label>
+                    <input type="text" name="nome_comercial" class="form-control" value="{{ nome_comercial_sugerido }}" placeholder="Ex: Picanha – Bife">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Margem desejada (%)</label>
+                    <input type="text" name="margem_percentual" class="form-control" id="margem_percentual" placeholder="Ex: 30" data-custo-real="{{ analise.custo_real_kg }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Preço de venda (R$/kg)</label>
+                    <input type="text" name="preco_venda_kg" class="form-control" id="preco_venda_kg" placeholder="Ex: 45,00" data-custo-real="{{ analise.custo_real_kg }}">
+                </div>
+            </div>
+            <div class="mb-3" id="status-preco">
+                <span class="badge bg-secondary" id="badge-status">Informe preço ou margem</span>
+            </div>
+            <button type="submit" class="btn btn-success">Salvar precificação</button>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    Selecione o tipo e o produto base e clique em <strong>Analisar</strong> para ver os dados e definir o preço.
+</div>
+{% endif %}
+
+{% if tipo_selecionado and not produto_base_selecionado and tipo_selecionado == 'CAIXA' and not produtos_caixa %}
+<div class="alert alert-warning">Nenhuma caixa em estoque no momento. Registre entradas e caixas com status EM_ESTOQUE.</div>
+{% endif %}
+{% if tipo_selecionado and not produto_base_selecionado and tipo_selecionado == 'PROCESSADO' and not produtos_processado %}
+<div class="alert alert-warning">Nenhum produto processado disponível. Registre um processamento primeiro.</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var custoReal = parseFloat(document.getElementById('preco_venda_kg')?.dataset?.custoReal || 0);
+    var margemEl = document.getElementById('margem_percentual');
+    var precoEl = document.getElementById('preco_venda_kg');
+    var badgeEl = document.getElementById('badge-status');
+
+    function num(s) {
+        if (s === undefined || s === null || s === '') return NaN;
+        var v = String(s).replace(',', '.').replace(/\s/g, '');
+        return parseFloat(v);
+    }
+
+    function atualizarStatus() {
+        if (!badgeEl) return;
+        var preco = num(precoEl?.value);
+        if (isNaN(preco) || preco <= 0) {
+            badgeEl.textContent = 'Informe preço ou margem';
+            badgeEl.className = 'badge bg-secondary';
+            return;
+        }
+        if (custoReal <= 0) {
+            badgeEl.textContent = 'Lucrativo';
+            badgeEl.className = 'badge bg-success';
+            return;
+        }
+        var margem = ((preco - custoReal) / custoReal) * 100;
+        if (preco < custoReal) {
+            badgeEl.textContent = 'Prejuízo';
+            badgeEl.className = 'badge bg-danger';
+        } else if (margem >= 20) {
+            badgeEl.textContent = 'Lucrativo';
+            badgeEl.className = 'badge bg-success';
+        } else {
+            badgeEl.textContent = 'Margem baixa';
+            badgeEl.className = 'badge bg-warning text-dark';
+        }
+    }
+
+    function precoFromMargem() {
+        var margem = num(margemEl?.value);
+        if (!isNaN(margem) && custoReal > 0) {
+            var p = custoReal * (1 + margem / 100);
+            if (precoEl) precoEl.value = p.toFixed(2).replace('.', ',');
+        }
+    }
+
+    function margemFromPreco() {
+        var preco = num(precoEl?.value);
+        if (!isNaN(preco) && custoReal > 0) {
+            var m = ((preco - custoReal) / custoReal) * 100;
+            if (margemEl) margemEl.value = m.toFixed(1).replace('.', ',');
+        }
+    }
+
+    if (margemEl) {
+        margemEl.addEventListener('input', function() { precoFromMargem(); atualizarStatus(); });
+    }
+    if (precoEl) {
+        precoEl.addEventListener('input', function() { margemFromPreco(); atualizarStatus(); });
+    }
+})();
+</script>
+{% endblock %}

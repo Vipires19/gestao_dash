@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Vendas (Produtos Processados){% endblock %}
+{% block page_title %}Vendas — Produtos Processados{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:venda_processado_nova' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> Nova Venda
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if vendas %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Valor total (R$)</th>
+                        <th>Lucro cliente (R$)</th>
+                        <th>Lucro sócio (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vendas %}
+                    <tr>
+                        <td>{{ v.data_venda_fmt }}</td>
+                        <td><span class="badge bg-secondary">{{ v.tipo_venda }}</span></td>
+                        <td>R$ {{ v.valor_total_venda|floatformat:2 }}</td>
+                        <td>R$ {{ v.lucro_cliente|floatformat:2 }}</td>
+                        <td>R$ {{ v.lucro_socio|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma venda de produtos processados. <a href="{% url 'estoque_app:venda_processado_nova' %}">Nova venda</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

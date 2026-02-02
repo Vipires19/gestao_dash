@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Venda — Caixas (Emporium Prime){% endblock %}
+{% block page_title %}Nova Venda — Caixas{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="form-venda-caixa" action="{% url 'estoque_app:venda_caixa_nova' %}">
+    {% csrf_token %}
+    <input type="hidden" name="itens_json" id="itens_json" value="">
+
+    <!-- Bloco 1 -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Dados da venda</h5></div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Data da venda <span class="text-danger">*</span></label>
+                    <input type="date" name="data_venda" class="form-control" value="{{ hoje }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de venda</label>
+                    <select name="tipo_venda" class="form-select">
+                        <option value="PROPRIA">Própria</option>
+                        <option value="PARCERIA">Parceria</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cliente (%)</label>
+                    <input type="number" name="divisao_cliente_percentual" class="form-control" min="0" max="100" placeholder="{{ divisao_padrao.cliente_percentual }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sócio (%)</label>
+                    <input type="number" name="divisao_socio_percentual" class="form-control" min="0" max="100" placeholder="{{ divisao_padrao.socio_percentual }}">
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'estoque_app:venda_caixa_list' %}" class="btn btn-outline-secondary">Voltar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 2 -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Buscar caixa</h5></div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Código da caixa</label>
+                    <input type="text" id="input-codigo-caixa" class="form-control" placeholder="Ex.: CX-0001" autocomplete="off">
+                </div>
+                <div class="col-auto">
+                    <button type="button" id="btn-buscar-caixa" class="btn btn-primary">Buscar caixa</button>
+                </div>
+            </div>
+            <div id="caixa-encontrada" class="mt-3 p-3 bg-light rounded d-none">
+                <p class="mb-2 small text-muted">Caixa encontrada — adicione o valor/kg de venda e clique em Adicionar.</p>
+                <dl class="row mb-2 small">
+                    <dt class="col-sm-2">Produto base</dt>
+                    <dd class="col-sm-4" id="disp-produto">—</dd>
+                    <dt class="col-sm-2">Peso (kg)</dt>
+                    <dd class="col-sm-4" id="disp-peso">—</dd>
+                    <dt class="col-sm-2">Custo/kg (R$)</dt>
+                    <dd class="col-sm-4" id="disp-custo">—</dd>
+                </dl>
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Valor/kg de venda (R$)</label>
+                        <input type="text" id="input-valor-venda-kg" class="form-control form-control-sm" placeholder="0,00" style="width: 120px;">
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" id="btn-adicionar-caixa" class="btn btn-sm btn-success">Adicionar à venda</button>
+                    </div>
+                </div>
+            </div>
+            <div id="caixa-erro" class="mt-3 alert alert-warning d-none" role="alert"></div>
+        </div>
+    </div>
+
+    <!-- Bloco 3 -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Caixas na venda</h5></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th>Peso (kg)</th>
+                            <th>Custo/kg (R$)</th>
+                            <th>Venda/kg (R$)</th>
+                            <th>Subtotal (R$)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-itens"></tbody>
+                </table>
+            </div>
+            <p id="msg-nenhum-item" class="text-muted small mb-0">Nenhuma caixa adicionada. Busque uma caixa pelo código acima.</p>
+        </div>
+    </div>
+
+    <!-- Bloco 4 -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Resumo</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Total venda (R$):</strong> <span id="resumo-venda">0,00</span></div>
+                <div class="col-md-3"><strong>Total custo (R$):</strong> <span id="resumo-custo">0,00</span></div>
+                <div class="col-md-3"><strong>Lucro (R$):</strong> <span id="resumo-lucro">0,00</span></div>
+                <div class="col-md-3"><strong>Div. cliente / sócio:</strong> <span id="resumo-div">—</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" id="btn-registrar" class="btn btn-primary">Registrar venda</button>
+        <a href="{% url 'estoque_app:venda_caixa_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    var apiBuscarCaixa = "{% url 'estoque_app:caixa_por_codigo_api' %}";
+    var caixaAtual = null;
+    var itens = [];
+
+    function num(x) { return parseFloat(String(x).replace(',', '.')) || 0; }
+
+    function atualizarResumo() {
+        var totalVenda = 0, totalCusto = 0;
+        itens.forEach(function(i) {
+            totalVenda += i.valor_venda_item;
+            totalCusto += i.custo_total_item;
+        });
+        var lucro = totalVenda - totalCusto;
+        var tipo = document.querySelector('select[name="tipo_venda"]');
+        var clientePct = parseInt(document.querySelector('input[name="divisao_cliente_percentual"]').value, 10) || {{ divisao_padrao.cliente_percentual }};
+        var socioPct = parseInt(document.querySelector('input[name="divisao_socio_percentual"]').value, 10) || {{ divisao_padrao.socio_percentual }};
+        if (tipo && tipo.value === 'PARCERIA' && (clientePct + socioPct) === 100) {
+            var divCliente = (lucro * clientePct / 100).toFixed(2);
+            var divSocio = (lucro * socioPct / 100).toFixed(2);
+            document.getElementById('resumo-div').textContent = 'R$ ' + divCliente + ' / R$ ' + divSocio;
+        } else {
+            document.getElementById('resumo-div').textContent = '—';
+        }
+        document.getElementById('resumo-venda').textContent = totalVenda.toFixed(2);
+        document.getElementById('resumo-custo').textContent = totalCusto.toFixed(2);
+        document.getElementById('resumo-lucro').textContent = lucro.toFixed(2);
+    }
+
+    function renderizarTabela() {
+        var tbody = document.getElementById('tbody-itens');
+        var msg = document.getElementById('msg-nenhum-item');
+        tbody.innerHTML = '';
+        if (itens.length === 0) {
+            msg.classList.remove('d-none');
+            atualizarResumo();
+            return;
+        }
+        msg.classList.add('d-none');
+        itens.forEach(function(item, idx) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + (item.codigo_caixa || '—') + '</td>' +
+                '<td>' + (item.produto_base || '') + '</td>' +
+                '<td>' + item.peso_kg + '</td>' +
+                '<td>' + item.custo_kg.toFixed(2) + '</td>' +
+                '<td>' + item.valor_venda_kg.toFixed(2) + '</td>' +
+                '<td>' + item.valor_venda_item.toFixed(2) + '</td>' +
+                '<td><button type="button" class="btn btn-sm btn-outline-danger btn-remover" data-idx="' + idx + '">Remover</button></td>';
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.btn-remover').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(this.getAttribute('data-idx'), 10);
+                itens.splice(idx, 1);
+                renderizarTabela();
+            });
+        });
+        atualizarResumo();
+    }
+
+    document.getElementById('btn-buscar-caixa').addEventListener('click', function() {
+        var codigo = document.getElementById('input-codigo-caixa').value.trim();
+        var bloco = document.getElementById('caixa-encontrada');
+        var erro = document.getElementById('caixa-erro');
+        bloco.classList.add('d-none');
+        erro.classList.add('d-none');
+        if (!codigo) {
+            erro.textContent = 'Informe o código da caixa.';
+            erro.classList.remove('d-none');
+            return;
+        }
+        var url = apiBuscarCaixa + '?codigo=' + encodeURIComponent(codigo);
+        fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.erro) {
+                erro.textContent = data.erro;
+                erro.classList.remove('d-none');
+                caixaAtual = null;
+                return;
+            }
+            caixaAtual = data;
+            document.getElementById('disp-produto').textContent = data.produto_base || '—';
+            document.getElementById('disp-peso').textContent = data.peso_atual_kg;
+            document.getElementById('disp-custo').textContent = (data.valor_kg || 0).toFixed(2);
+            var precoSugerido = (data.valor_venda_kg != null && data.valor_venda_kg > 0) ? data.valor_venda_kg.toFixed(2).replace('.', ',') : '';
+            document.getElementById('input-valor-venda-kg').value = precoSugerido;
+            document.getElementById('input-valor-venda-kg').focus();
+            bloco.classList.remove('d-none');
+        }).catch(function() {
+            erro.textContent = 'Erro ao buscar caixa.';
+            erro.classList.remove('d-none');
+            caixaAtual = null;
+        });
+    });
+
+    document.getElementById('btn-adicionar-caixa').addEventListener('click', function() {
+        if (!caixaAtual) return;
+        var valorVendaKg = num(document.getElementById('input-valor-venda-kg').value);
+        if (valorVendaKg <= 0) {
+            alert('Informe o valor/kg de venda.');
+            return;
+        }
+        var peso = num(caixaAtual.peso_atual_kg);
+        var custoKg = num(caixaAtual.valor_kg);
+        var custoTotal = peso * custoKg;
+        var valorVendaItem = peso * valorVendaKg;
+        itens.push({
+            caixa_id: caixaAtual.id,
+            codigo_caixa: caixaAtual.codigo_caixa || '',
+            produto_base: caixaAtual.produto_base || '',
+            peso_kg: peso,
+            custo_kg: custoKg,
+            valor_venda_kg: valorVendaKg,
+            custo_total_item: custoTotal,
+            valor_venda_item: valorVendaItem
+        });
+        renderizarTabela();
+        document.getElementById('input-codigo-caixa').value = '';
+        document.getElementById('input-codigo-caixa').focus();
+        caixaAtual = null;
+        document.getElementById('caixa-encontrada').classList.add('d-none');
+    });
+
+    document.getElementById('form-venda-caixa').addEventListener('submit', function(e) {
+        if (itens.length === 0) {
+            e.preventDefault();
+            alert('Adicione ao menos uma caixa à venda.');
+            return;
+        }
+        var payload = itens.map(function(i) {
+            return {
+                caixa_id: i.caixa_id,
+                codigo_caixa: i.codigo_caixa,
+                produto_base: i.produto_base,
+                peso_kg: i.peso_kg,
+                custo_kg: i.custo_kg,
+                valor_venda_kg: i.valor_venda_kg
+            };
+        });
+        document.getElementById('itens_json').value = JSON.stringify(payload);
+    });
+
+    atualizarResumo();
+})();
+</script>
+{% endblock %}

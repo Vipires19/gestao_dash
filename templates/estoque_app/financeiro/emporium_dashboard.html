@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+
+{% block title %}Financeiro Emporium Prime{% endblock %}
+{% block page_title %}Financeiro — Emporium Prime{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Bloco 1 — Cards (hoje) -->
+<div class="section-title">Resumo do dia (Emporium Prime)</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-currency-dollar"></i></div>
+                    <div>
+                        <div class="value">R$ {{ faturamento_hoje|floatformat:2 }}</div>
+                        <div class="label">Faturamento hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-danger"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="value">R$ {{ despesas_hoje|floatformat:2 }}</div>
+                        <div class="label">Despesas hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-success"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div>
+                        <div class="value {% if lucro_hoje >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ lucro_hoje|floatformat:2 }}</div>
+                        <div class="label">Lucro hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-primary"><i class="bi bi-person"></i></div>
+                    <div>
+                        <div class="value">R$ {{ lucro_cliente_hoje|floatformat:2 }}</div>
+                        <div class="label">Lucro hoje (cliente)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-secondary"><i class="bi bi-person-badge"></i></div>
+                    <div>
+                        <div class="value">R$ {{ lucro_socio_hoje|floatformat:2 }}</div>
+                        <div class="label">Lucro hoje (sócio)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <div class="small-card">
+                    <div class="icon-wrap bg-info"><i class="bi bi-cart-check"></i></div>
+                    <div>
+                        <div class="value">{{ quantidade_vendas_hoje }}</div>
+                        <div class="label">Vendas hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 2 — Gráficos mês atual -->
+<div class="section-title">Mês atual</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lucro (mês)</h5>
+                <div style="height: 260px;"><canvas id="chart-lucro-mes"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Despesas (mês)</h5>
+                <div style="height: 260px;"><canvas id="chart-despesas-mes"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lucro x Despesas (mês)</h5>
+                <div style="height: 260px;"><canvas id="chart-comparativo-mes"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 3 — Gráficos últimos 3 meses -->
+<div class="section-title">Últimos 3 meses</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lucro por mês</h5>
+                <div style="height: 260px;"><canvas id="chart-lucro-3m"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Despesas por mês</h5>
+                <div style="height: 260px;"><canvas id="chart-despesas-3m"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lucro x Despesas (3 meses)</h5>
+                <div style="height: 260px;"><canvas id="chart-comparativo-3m"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco 4 — Tabela de vendas -->
+<div class="section-title">Vendas Emporium Prime</div>
+<div class="card card-dashboard mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Últimas vendas (processados + atacado)</h5>
+        {% if vendas_lista %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Valor total (R$)</th>
+                        <th>Lucro cliente (R$)</th>
+                        <th>Lucro sócio (R$)</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vendas_lista %}
+                    <tr>
+                        <td>{{ v.data_venda_fmt }}</td>
+                        <td>
+                            {% if v.tipo_emporium == 'PROCESSADO' %}
+                            <span class="badge bg-primary">PROCESSADO</span>
+                            {% else %}
+                            <span class="badge bg-info">ATACADO</span>
+                            {% endif %}
+                        </td>
+                        <td>R$ {{ v.valor_total_venda|floatformat:2 }}</td>
+                        <td>R$ {{ v.lucro_cliente|floatformat:2 }}</td>
+                        <td>R$ {{ v.lucro_socio|floatformat:2 }}</td>
+                        <td><a href="{% url 'estoque_app:emporium_comprovante' venda_id=v.id %}" class="btn btn-sm btn-outline-primary">Comprovante</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma venda registrada.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bloco 5 — Alertas financeiros (títulos pendentes) -->
+<div class="section-title">Alertas financeiros</div>
+<div class="card card-dashboard border-warning">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Títulos pendentes de pagamento</h5>
+        <p class="small text-muted mb-2">Obrigações geradas pelas entradas de estoque. <a href="{% url 'estoque_app:titulos_pendentes' %}">Registrar pagamento</a></p>
+        {% if alertas_esta_semana or alertas_semana_que_vem or alertas_proxima_semana %}
+        <div class="row">
+            <div class="col-md-4">
+                <h6 class="text-muted">Esta semana</h6>
+                {% if alertas_esta_semana %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard">
+                        <thead><tr><th>Venc.</th><th>Valor</th><th>Fornecedor</th><th>NF</th></tr></thead>
+                        <tbody>
+                            {% for a in alertas_esta_semana %}
+                            <tr>
+                                <td>{{ a.data_fmt }}</td>
+                                <td>R$ {{ a.valor|floatformat:2 }}</td>
+                                <td>{{ a.fornecedor }}</td>
+                                <td>{{ a.nf_numero|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma.</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Semana que vem</h6>
+                {% if alertas_semana_que_vem %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard">
+                        <thead><tr><th>Venc.</th><th>Valor</th><th>Fornecedor</th><th>NF</th></tr></thead>
+                        <tbody>
+                            {% for a in alertas_semana_que_vem %}
+                            <tr>
+                                <td>{{ a.data_fmt }}</td>
+                                <td>R$ {{ a.valor|floatformat:2 }}</td>
+                                <td>{{ a.fornecedor }}</td>
+                                <td>{{ a.nf_numero|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma.</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Próxima semana</h6>
+                {% if alertas_proxima_semana %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard">
+                        <thead><tr><th>Venc.</th><th>Valor</th><th>Fornecedor</th><th>NF</th></tr></thead>
+                        <tbody>
+                            {% for a in alertas_proxima_semana %}
+                            <tr>
+                                <td>{{ a.data_fmt }}</td>
+                                <td>R$ {{ a.valor|floatformat:2 }}</td>
+                                <td>{{ a.fornecedor }}</td>
+                                <td>{{ a.nf_numero|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">Nenhuma.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum título pendente.</p>
+        {% endif %}
+    </div>
+</div>
+
+{{ grafico_lucro_mes|json_script:"lucro-mes-data" }}
+{{ grafico_despesas_mes|json_script:"despesas-mes-data" }}
+{{ grafico_faturamento_mes|json_script:"faturamento-mes-data" }}
+{{ grafico_lucro_3meses|json_script:"lucro-3m-data" }}
+{{ grafico_despesas_3meses|json_script:"despesas-3m-data" }}
+{{ grafico_faturamento_3meses|json_script:"faturamento-3m-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    var lucroMes = document.getElementById('lucro-mes-data');
+    var despMes = document.getElementById('despesas-mes-data');
+    var fatMes = document.getElementById('faturamento-mes-data');
+    var lucro3m = document.getElementById('lucro-3m-data');
+    var desp3m = document.getElementById('despesas-3m-data');
+    var fat3m = document.getElementById('faturamento-3m-data');
+    var lucroMesData = lucroMes ? JSON.parse(lucroMes.textContent) : [];
+    var despMesData = despMes ? JSON.parse(despMes.textContent) : [];
+    var fatMesData = fatMes ? JSON.parse(fatMes.textContent) : [];
+    var lucro3mData = lucro3m ? JSON.parse(lucro3m.textContent) : [];
+    var desp3mData = desp3m ? JSON.parse(desp3m.textContent) : [];
+    var fat3mData = fat3m ? JSON.parse(fat3m.textContent) : [];
+
+    var labelsMes = lucroMesData.length ? lucroMesData.map(function(d){ return d.data; }) : (despMesData.length ? despMesData.map(function(d){ return d.data; }) : []);
+    if (lucroMesData.length && document.getElementById('chart-lucro-mes')) {
+        new Chart(document.getElementById('chart-lucro-mes'), {
+            type: 'line',
+            data: { labels: lucroMesData.map(function(d){ return d.data; }), datasets: [{ label: 'Lucro (R$)', data: lucroMesData.map(function(d){ return d.valor; }), borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.1)', fill: true, tension: 0.2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (despMesData.length !== undefined && despMesData.length >= 0 && document.getElementById('chart-despesas-mes')) {
+        new Chart(document.getElementById('chart-despesas-mes'), {
+            type: 'line',
+            data: { labels: despMesData.map(function(d){ return d.data; }), datasets: [{ label: 'Despesas (R$)', data: despMesData.map(function(d){ return d.valor; }), borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', fill: true, tension: 0.2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (labelsMes.length && document.getElementById('chart-comparativo-mes')) {
+        var fatV = fatMesData.length ? fatMesData.map(function(d){ return d.valor; }) : labelsMes.map(function(){ return 0; });
+        var despV = despMesData.length ? despMesData.map(function(d){ return d.valor; }) : labelsMes.map(function(){ return 0; });
+        new Chart(document.getElementById('chart-comparativo-mes'), {
+            type: 'line',
+            data: {
+                labels: labelsMes,
+                datasets: [
+                    { label: 'Faturamento (R$)', data: fatV, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'Despesas (R$)', data: despV, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', fill: true, tension: 0.2 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    var labels3m = lucro3mData.length ? lucro3mData.map(function(d){ return d.data; }) : [];
+    if (lucro3mData.length && document.getElementById('chart-lucro-3m')) {
+        new Chart(document.getElementById('chart-lucro-3m'), {
+            type: 'bar',
+            data: { labels: labels3m, datasets: [{ label: 'Lucro (R$)', data: lucro3mData.map(function(d){ return d.valor; }), backgroundColor: 'rgba(25, 135, 84, 0.7)', borderColor: '#198754', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (desp3mData.length !== undefined && document.getElementById('chart-despesas-3m')) {
+        new Chart(document.getElementById('chart-despesas-3m'), {
+            type: 'bar',
+            data: { labels: labels3m, datasets: [{ label: 'Despesas (R$)', data: desp3mData.map(function(d){ return d.valor; }), backgroundColor: 'rgba(220, 53, 69, 0.7)', borderColor: '#dc3545', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+    if (labels3m.length && document.getElementById('chart-comparativo-3m')) {
+        var f3 = fat3mData.length ? fat3mData.map(function(d){ return d.valor; }) : labels3m.map(function(){ return 0; });
+        var d3 = desp3mData.length ? desp3mData.map(function(d){ return d.valor; }) : labels3m.map(function(){ return 0; });
+        new Chart(document.getElementById('chart-comparativo-3m'), {
+            type: 'bar',
+            data: {
+                labels: labels3m,
+                datasets: [
+                    { label: 'Faturamento (R$)', data: f3, backgroundColor: 'rgba(13, 110, 253, 0.7)', borderColor: '#0d6efd', borderWidth: 1 },
+                    { label: 'Despesas (R$)', data: d3, backgroundColor: 'rgba(220, 53, 69, 0.7)', borderColor: '#dc3545', borderWidth: 1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+})();
+</script>
+{% endblock %}

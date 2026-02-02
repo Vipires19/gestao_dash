@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Pães — Registrar pagamento{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header"><h5 class="mb-0">Registrar pagamento</h5></div>
+    <div class="card-body">
+        <div class="mb-3 p-2 bg-light rounded">
+            <strong>{{ titulo.nome_cliente|default:"—" }}</strong> &nbsp;|&nbsp;
+            R$ {{ titulo.valor|floatformat:2 }} &nbsp;|&nbsp;
+            Vencimento: {{ titulo.data_vencimento_fmt }} &nbsp;|&nbsp;
+            Plano: {{ titulo.tipo_plano }}
+        </div>
+        <form method="post" action="{% url 'estoque_app:paes_financeiro_registrar' titulo.id %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Data do pagamento <span class="text-danger">*</span></label>
+                    <input type="date" name="data_pagamento" class="form-control" required
+                           value="{% if form_data.data_pagamento %}{{ form_data.data_pagamento }}{% endif %}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Forma de pagamento</label>
+                    <select name="forma_pagamento" class="form-select">
+                        <option value="">—</option>
+                        {% for f in formas_pagamento %}
+                        <option value="{{ f }}" {% if form_data.forma_pagamento == f %}selected{% endif %}>{{ f }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea name="observacoes" class="form-control" rows="2">{% if form_data.observacoes %}{{ form_data.observacoes }}{% endif %}</textarea>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success">Registrar pagamento</button>
+                <a href="{% url 'estoque_app:paes_financeiro_pendentes' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

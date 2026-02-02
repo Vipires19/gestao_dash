@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Entradas de Estoque - Operação{% endblock %}
+{% block page_title %}Entradas de Estoque{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:entrada_nova' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> Nova Entrada
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if entradas %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data da entrada</th>
+                        <th>Fornecedor</th>
+                        <th>Nº NF-e</th>
+                        <th>Valor total</th>
+                        <th>Data pagamento</th>
+                        <th>Status pagamento</th>
+                        <th>Caixas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in entradas %}
+                    <tr>
+                        <td>{{ e.data_entrada_fmt }}</td>
+                        <td>{{ e.nome_fornecedor }}</td>
+                        <td>{{ e.nf_numero|default:"—" }}</td>
+                        <td>R$ {{ e.valor_total|floatformat:2 }}</td>
+                        <td>{{ e.data_pagamento_fmt|default:"—" }}</td>
+                        <td><span class="badge bg-secondary">{{ e.status_pagamento }}</span></td>
+                        <td>{{ e.qtd_caixas }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma entrada de estoque registrada. <a href="{% url 'estoque_app:entrada_nova' %}">Nova entrada</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Processamentos - Operação{% endblock %}
+{% block page_title %}Processamentos / Corte{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:processamento_novo' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> Novo Processamento
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if processamentos %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Produto base</th>
+                        <th>Caixas utilizadas</th>
+                        <th>Peso origem (kg)</th>
+                        <th>Perda (kg / %)</th>
+                        <th>Produtos gerados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in processamentos %}
+                    <tr>
+                        <td>{{ p.data_processamento_fmt }}</td>
+                        <td>{{ p.produto_base_resumo }}</td>
+                        <td>{{ p.qtd_caixas_utilizadas }}</td>
+                        <td>{{ p.peso_total_origem }}</td>
+                        <td>{{ p.perda.peso_kg }} kg / {{ p.perda.percentual }}%</td>
+                        <td>
+                            {% for item in p.produtos_gerados %}
+                            {{ item.produto }}: {{ item.peso_kg }} kg{% if not forloop.last %}; {% endif %}
+                            {% empty %}—{% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum processamento registrado. <a href="{% url 'estoque_app:processamento_novo' %}">Novo processamento</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

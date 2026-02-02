@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Estoque Emporium Prime{% endblock %}
+{% block page_title %}Estoque Emporium Prime{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Busca única -->
+<div class="card card-dashboard mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-0">Código</label>
+                <input type="text" name="codigo" class="form-control form-control-sm" value="{{ filtro_codigo }}" placeholder="Código da caixa ou nome do produto">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Fornecedor</label>
+                <select name="fornecedor_id" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for f in fornecedores %}
+                    <option value="{{ f.id }}" {% if filtro_fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="EM_ESTOQUE" {% if filtro_status == 'EM_ESTOQUE' %}selected{% endif %}>Em estoque</option>
+                    <option value="VENDIDA" {% if filtro_status == 'VENDIDA' %}selected{% endif %}>Vendida</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bloco 1 — Caixas -->
+<div class="card card-dashboard mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Caixas</h5>
+    </div>
+    <div class="card-body">
+        {% if caixas %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código da caixa</th>
+                        <th>Produto base</th>
+                        <th>Fornecedor</th>
+                        <th>Peso atual (kg)</th>
+                        <th>Valor/kg</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in caixas %}
+                    <tr>
+                        <td>{{ c.codigo_caixa|default:"—" }}</td>
+                        <td>{{ c.produto_base|default:"—" }}</td>
+                        <td>{{ c.nome_fornecedor|default:"—" }}</td>
+                        <td>{{ c.peso_atual_kg|floatformat:3 }}</td>
+                        <td>R$ {{ c.valor_kg|floatformat:2 }}</td>
+                        <td>
+                            {% if c.status == 'EM_ESTOQUE' %}
+                            <span class="badge bg-success">EM_ESTOQUE</span>
+                            {% elif c.status == 'VENDIDA' %}
+                            <span class="badge bg-secondary">VENDIDA</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">{{ c.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'estoque_app:caixa_detail' c.id %}" class="btn btn-sm btn-outline-primary me-1" title="Visualizar">Ver</a>
+                            {% if c.status == 'EM_ESTOQUE' %}
+                            <a href="{% url 'estoque_app:venda_caixa_nova' %}" class="btn btn-sm btn-outline-success me-1" title="Vender">Vender</a>
+                            <a href="{% url 'estoque_app:processamento_novo' %}" class="btn btn-sm btn-outline-info" title="Processar">Processar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma caixa encontrada.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bloco 2 — Produtos Processados -->
+<div class="card card-dashboard">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-scissors me-2"></i>Produtos Processados</h5>
+    </div>
+    <div class="card-body">
+        {% if produtos_derivados %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produto derivado</th>
+                        <th>Origem</th>
+                        <th>Peso disponível (kg)</th>
+                        <th>Custo/kg</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in produtos_derivados %}
+                    <tr>
+                        <td>{{ p.produto|default:"—" }}</td>
+                        <td>Processamento</td>
+                        <td>{{ p.peso_disponivel_kg|floatformat:3 }}</td>
+                        <td>R$ {{ p.custo_kg|floatformat:2 }}</td>
+                        <td><span class="badge bg-success">Disponível</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum produto processado disponível.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

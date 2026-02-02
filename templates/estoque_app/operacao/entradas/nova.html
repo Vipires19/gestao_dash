@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Entrada de Estoque - Operação{% endblock %}
+{% block page_title %}Nova Entrada de Estoque{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" id="form-entrada">
+    {% csrf_token %}
+
+    <!-- Bloco 1 — Dados da compra -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Dados da compra</h5></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Data da entrada <span class="text-danger">*</span></label>
+                    <input type="date" name="data_entrada" class="form-control" value="{{ form_data.data_entrada|default:hoje }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Fornecedor <span class="text-danger">*</span></label>
+                    <select name="fornecedor_id" class="form-select" required>
+                        <option value="">Selecione</option>
+                        {% for f in fornecedores %}
+                        <option value="{{ f.id }}" {% if form_data.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <small><a href="{% url 'estoque_app:fornecedor_list' %}" target="_blank">Cadastrar fornecedor</a></small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nº NF-e</label>
+                    <input type="text" name="nf_numero" class="form-control" value="{{ form_data.nf_numero|default:'' }}" placeholder="Ex.: 12345">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Upload NF-e (PDF/XML)</label>
+                    <input type="file" name="nf_arquivo" class="form-control" accept=".pdf,.xml">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Valor total da compra (R$) <span class="text-danger">*</span></label>
+                    <input type="text" name="valor_total" class="form-control" value="{{ form_data.valor_total|default:'' }}" placeholder="0,00" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data de pagamento</label>
+                    <input type="date" name="data_pagamento" class="form-control" value="{{ form_data.data_pagamento|default:'' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status pagamento</label>
+                    <select name="status_pagamento" class="form-select">
+                        <option value="PENDENTE" {% if form_data.status_pagamento == 'PENDENTE' or not form_data %}selected{% endif %}>Pendente</option>
+                        <option value="PAGO" {% if form_data.status_pagamento == 'PAGO' %}selected{% endif %}>Pago</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Forma de pagamento</label>
+                    <select name="forma_pagamento" class="form-select">
+                        <option value="BOLETO">Boleto</option>
+                        <option value="PIX">PIX</option>
+                        <option value="TRANSFERENCIA">Transferência</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea name="observacoes" class="form-control" rows="2">{{ form_data.observacoes|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 2 — Produtos da entrada -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Produtos da entrada</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-produto"><i class="bi bi-plus"></i> Adicionar produto</button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="tabela-produtos">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produto base</th>
+                            <th>Qtd. caixas</th>
+                            <th>Peso por caixa (kg)</th>
+                            <th>Valor total do produto (R$)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-produtos">
+                        <tr class="linha-produto">
+                            <td><input type="text" name="produto_base" class="form-control form-control-sm" placeholder="Ex.: Picanha inteira"></td>
+                            <td><input type="number" name="quantidade_caixas" class="form-control form-control-sm" min="1" value="1"></td>
+                            <td><input type="text" name="peso_por_caixa_kg" class="form-control form-control-sm" placeholder="0,00"></td>
+                            <td><input type="text" name="valor_total_produto" class="form-control form-control-sm" placeholder="0,00"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 3 — Resumo (somente leitura) -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Resumo</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4"><strong>Total de caixas:</strong> <span id="resumo-qtd-caixas">0</span></div>
+                <div class="col-md-4"><strong>Peso total (kg):</strong> <span id="resumo-peso-total">0,00</span></div>
+                <div class="col-md-4"><strong>Valor médio por kg:</strong> R$ <span id="resumo-valor-kg">0,00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary">Salvar entrada</button>
+        <a href="{% url 'estoque_app:entrada_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    function atualizarResumo() {
+        var totalCaixas = 0, pesoTotal = 0, valorTotal = 0;
+        document.querySelectorAll('#tbody-produtos tr').forEach(function(tr) {
+            var qtd = parseInt(tr.querySelector('[name="quantidade_caixas"]').value) || 0;
+            var peso = parseFloat((tr.querySelector('[name="peso_por_caixa_kg"]').value || '0').replace(',', '.')) || 0;
+            var valor = parseFloat((tr.querySelector('[name="valor_total_produto"]').value || '0').replace(',', '.')) || 0;
+            totalCaixas += qtd;
+            pesoTotal += qtd * peso;
+            valorTotal += valor;
+        });
+        document.getElementById('resumo-qtd-caixas').textContent = totalCaixas;
+        document.getElementById('resumo-peso-total').textContent = pesoTotal.toFixed(2);
+        document.getElementById('resumo-valor-kg').textContent = pesoTotal > 0 ? (valorTotal / pesoTotal).toFixed(2) : '0,00';
+    }
+    document.getElementById('btn-add-produto').addEventListener('click', function() {
+        var tbody = document.getElementById('tbody-produtos');
+        var tr = document.createElement('tr');
+        tr.className = 'linha-produto';
+        tr.innerHTML = '<td><input type="text" name="produto_base" class="form-control form-control-sm" placeholder="Ex.: Picanha inteira"></td>' +
+            '<td><input type="number" name="quantidade_caixas" class="form-control form-control-sm" min="1" value="1"></td>' +
+            '<td><input type="text" name="peso_por_caixa_kg" class="form-control form-control-sm" placeholder="0,00"></td>' +
+            '<td><input type="text" name="valor_total_produto" class="form-control form-control-sm" placeholder="0,00"></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button></td>';
+        tbody.appendChild(tr);
+        tr.querySelector('.btn-remove-row').addEventListener('click', function() { tr.remove(); atualizarResumo(); });
+        tr.querySelectorAll('input').forEach(function(inp) { inp.addEventListener('input', atualizarResumo); });
+        atualizarResumo();
+    });
+    document.getElementById('tbody-produtos').addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-row')) {
+            var tr = e.target.closest('tr');
+            if (document.querySelectorAll('#tbody-produtos tr').length > 1) tr.remove();
+            atualizarResumo();
+        }
+    });
+    document.querySelectorAll('#tbody-produtos input').forEach(function(inp) { inp.addEventListener('input', atualizarResumo); });
+    atualizarResumo();
+})();
+</script>
+{% endblock %}

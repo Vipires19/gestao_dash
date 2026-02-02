@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Processamento - Operação{% endblock %}
+{% block page_title %}Novo Processamento / Corte{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="form-processamento">
+    {% csrf_token %}
+
+    <!-- Data -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Data do processamento <span class="text-danger">*</span></label>
+                    <input type="date" name="data_processamento" class="form-control" value="{{ hoje }}" required>
+                </div>
+                <div class="col-md-4">
+                    <a href="{% url 'estoque_app:processamento_list' %}" class="btn btn-outline-secondary">Voltar à listagem</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 1 — Seleção de Caixas -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="mb-0">Seleção de caixas (EM_ESTOQUE)</h5>
+            <div class="d-flex gap-2 align-items-center" id="filtro-caixas">
+                <input type="text" id="filtro-produto" class="form-control form-control-sm" style="width: 200px;" value="{{ filtro_produto }}" placeholder="Filtrar por produto">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-filtrar-caixas">Filtrar</button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if caixas %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Selecionar</th>
+                            <th>Caixa</th>
+                            <th>Peso atual (kg)</th>
+                            <th>Valor/kg (R$)</th>
+                            <th>Peso a utilizar (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in caixas %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="selecionar" value="{{ c.id }}" class="form-check-input js-selecionar-caixa" data-peso-max="{{ c.peso_atual_kg }}">
+                            </td>
+                            <td>
+                                {{ c.codigo_caixa|default:"—" }} — {{ c.produto_base }} — {{ c.peso_atual_kg }} kg
+                                <input type="hidden" name="produto_base_{{ c.id }}" value="{{ c.produto_base }}">
+                            </td>
+                            <td>{{ c.peso_atual_kg }}</td>
+                            <td>R$ {{ c.valor_kg|floatformat:2 }}</td>
+                            <td>
+                                <input type="text" name="peso_utilizado_{{ c.id }}" class="form-control form-control-sm js-peso-utilizado" style="width: 100px;" placeholder="0" data-caixa-id="{{ c.id }}" disabled>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted mb-0">O peso de origem é calculado automaticamente com base nas caixas selecionadas.</p>
+            {% else %}
+            <p class="text-muted mb-0">Nenhuma caixa em estoque disponível. Ajuste o filtro ou registre entradas.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bloco 2 — Produtos Gerados -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Produtos gerados</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-produto-gerado"><i class="bi bi-plus"></i> Adicionar produto gerado</button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="tabela-produtos-gerados">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome do produto derivado</th>
+                            <th>Peso (kg)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-produtos-gerados">
+                        <tr class="linha-produto-gerado">
+                            <td><input type="text" name="produto_gerado" class="form-control form-control-sm" placeholder="Ex.: Picanha bife"></td>
+                            <td><input type="text" name="peso_gerado_kg" class="form-control form-control-sm js-peso-gerado" placeholder="0,00"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-gerado"><i class="bi bi-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 3 — Perda -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Perda</h5></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Peso da perda (kg) <span class="text-danger">*</span></label>
+                    <input type="text" name="perda_kg" id="perda_kg" class="form-control" value="0" placeholder="0,00" required>
+                    <small class="text-muted">Obrigatório (use 0 se não houver perda).</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Percentual da perda</label>
+                    <input type="text" id="perda_percentual_display" class="form-control" readonly placeholder="—">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea name="observacoes" class="form-control" rows="2" placeholder="Opcional"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloco 4 — Resumo (somente leitura) -->
+    <div class="card card-dashboard mb-4">
+        <div class="card-header"><h5 class="mb-0">Resumo</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Peso total origem (kg):</strong> <span id="resumo-peso-origem">0,00</span></div>
+                <div class="col-md-3"><strong>Peso aproveitado (kg):</strong> <span id="resumo-peso-aproveitado">0,00</span></div>
+                <div class="col-md-3"><strong>Perda (kg):</strong> <span id="resumo-perda-kg">0,00</span></div>
+                <div class="col-md-3"><strong>Percentual perda:</strong> <span id="resumo-perda-pct">0,00</span>%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary" id="btn-registrar">Registrar Processamento</button>
+        <a href="{% url 'estoque_app:processamento_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    function num(x) { return parseFloat(String(x).replace(',', '.')) || 0; }
+
+    document.getElementById('btn-filtrar-caixas').addEventListener('click', function() {
+        var valor = (document.getElementById('filtro-produto').value || '').trim();
+        var url = window.location.pathname;
+        if (valor) url += '?produto=' + encodeURIComponent(valor);
+        else url = url.split('?')[0];
+        window.location.href = url;
+    });
+
+    function atualizarResumo() {
+        var pesoOrigem = 0;
+        document.querySelectorAll('.js-selecionar-caixa:checked').forEach(function(cb) {
+            var caixaId = cb.value;
+            var inp = document.querySelector('input[name="peso_utilizado_' + caixaId + '"]');
+            if (inp && !inp.disabled) pesoOrigem += num(inp.value);
+        });
+        var pesoAproveitado = 0;
+        document.querySelectorAll('.js-peso-gerado').forEach(function(inp) {
+            pesoAproveitado += num(inp.value);
+        });
+        var perdaKg = num(document.getElementById('perda_kg').value);
+        var pesoTotal = pesoOrigem;
+        var pctPerda = pesoTotal > 0 ? (perdaKg / pesoTotal * 100) : 0;
+
+        document.getElementById('resumo-peso-origem').textContent = pesoOrigem.toFixed(2);
+        document.getElementById('resumo-peso-aproveitado').textContent = pesoAproveitado.toFixed(2);
+        document.getElementById('resumo-perda-kg').textContent = perdaKg.toFixed(2);
+        document.getElementById('resumo-perda-pct').textContent = pctPerda.toFixed(2);
+        document.getElementById('perda_percentual_display').value = pctPerda.toFixed(2) + '%';
+    }
+
+    document.querySelectorAll('.js-selecionar-caixa').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var inp = document.querySelector('input[name="peso_utilizado_' + this.value + '"]');
+            if (inp) {
+                inp.disabled = !this.checked;
+                if (this.checked) inp.placeholder = 'máx. ' + cb.getAttribute('data-peso-max');
+            }
+            atualizarResumo();
+        });
+    });
+    document.querySelectorAll('.js-peso-utilizado').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+            var max = parseFloat(this.getAttribute('data-peso-max')) || 0;
+            var v = num(this.value);
+            if (max > 0 && v > max) this.value = max;
+            atualizarResumo();
+        });
+    });
+    document.getElementById('perda_kg').addEventListener('input', atualizarResumo);
+
+    document.getElementById('btn-add-produto-gerado').addEventListener('click', function() {
+        var tbody = document.getElementById('tbody-produtos-gerados');
+        var tr = document.createElement('tr');
+        tr.className = 'linha-produto-gerado';
+        tr.innerHTML = '<td><input type="text" name="produto_gerado" class="form-control form-control-sm" placeholder="Ex.: Picanha bife"></td>' +
+            '<td><input type="text" name="peso_gerado_kg" class="form-control form-control-sm js-peso-gerado" placeholder="0,00"></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-gerado"><i class="bi bi-trash"></i></button></td>';
+        tbody.appendChild(tr);
+        tr.querySelector('.btn-remove-gerado').addEventListener('click', function() {
+            if (tbody.querySelectorAll('tr').length > 1) tr.remove();
+            atualizarResumo();
+        });
+        tr.querySelector('.js-peso-gerado').addEventListener('input', atualizarResumo);
+        atualizarResumo();
+    });
+    document.getElementById('tbody-produtos-gerados').addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-gerado')) {
+            var tr = e.target.closest('tr');
+            if (document.querySelectorAll('#tbody-produtos-gerados tr').length > 1) tr.remove();
+            atualizarResumo();
+        }
+    });
+    document.querySelectorAll('.js-peso-gerado').forEach(function(inp) { inp.addEventListener('input', atualizarResumo); });
+
+    atualizarResumo();
+})();
+</script>
+{% endblock %}

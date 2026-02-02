@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if cliente %}Editar{% else %}Novo{% endif %} cliente — Pães{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header"><h5 class="mb-0">{% if cliente %}Editar cliente{% else %}Novo cliente{% endif %}</h5></div>
+    <div class="card-body">
+        <form method="post" action="{% if cliente %}{% url 'estoque_app:paes_clientes_editar' cliente.id %}{% else %}{% url 'estoque_app:paes_clientes_novo' %}{% endif %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Nome <span class="text-danger">*</span></label>
+                    <input type="text" name="nome" class="form-control" required
+                           value="{% if form_data.nome %}{{ form_data.nome }}{% elif cliente %}{{ cliente.nome }}{% endif %}"
+                           placeholder="Nome do cliente">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefone <span class="text-danger">*</span></label>
+                    <input type="text" name="telefone" class="form-control" required
+                           value="{% if form_data.telefone %}{{ form_data.telefone }}{% elif cliente %}{{ cliente.telefone }}{% endif %}"
+                           placeholder="Ex.: (11) 99999-9999">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Endereço <span class="text-danger">*</span></label>
+                    <input type="text" name="endereco" class="form-control" required
+                           value="{% if form_data.endereco %}{{ form_data.endereco }}{% elif cliente %}{{ cliente.endereco }}{% endif %}"
+                           placeholder="Endereço comum ou condomínio | quadra | lote">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea name="observacoes" class="form-control" rows="2" placeholder="Opcional">{% if form_data.observacoes %}{{ form_data.observacoes }}{% elif cliente %}{{ cliente.observacoes|default:'' }}{% endif %}</textarea>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">{% if cliente %}Atualizar{% else %}Salvar{% endif %}</button>
+                <a href="{% url 'estoque_app:paes_clientes_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

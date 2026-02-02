@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Pães — Clientes{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:paes_clientes_novo' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> Novo cliente
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if clientes %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Endereço</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clientes %}
+                    <tr>
+                        <td>{{ c.nome }}</td>
+                        <td>{{ c.telefone|default:"—" }}</td>
+                        <td>{{ c.endereco|default:"—" }}</td>
+                        <td>
+                            <a href="{% url 'estoque_app:paes_clientes_editar' c.id %}" class="btn btn-sm btn-outline-primary me-1">Editar</a>
+                            <form method="post" action="{% url 'estoque_app:paes_clientes_inativar' c.id %}" class="d-inline" onsubmit="return confirm('Inativar este cliente?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Inativar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum cliente cadastrado. <a href="{% url 'estoque_app:paes_clientes_novo' %}">Novo cliente</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

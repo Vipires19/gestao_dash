@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if plano %}Editar{% else %}Novo{% endif %} plano — Pães{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard mb-4">
+    <div class="card-header"><h5 class="mb-0">{% if plano %}Editar plano{% else %}Novo plano de entrega{% endif %}</h5></div>
+    <div class="card-body">
+        <form method="post" action="{% if plano %}{% url 'estoque_app:paes_planos_editar' plano.id %}{% else %}{% url 'estoque_app:paes_planos_novo' %}{% endif %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                {% if not plano %}
+                <div class="col-12">
+                    <label class="form-label">Cliente <span class="text-danger">*</span></label>
+                    <select name="cliente_id" class="form-select" required>
+                        <option value="">Selecione o cliente</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}" {% if form_data.cliente_id == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de plano <span class="text-danger">*</span></label>
+                    <select name="tipo_plano" class="form-select" required>
+                        {% for t in tipo_plano_choices %}
+                        <option value="{{ t }}" {% if form_data.tipo_plano == t or not form_data and t == 'SEMANAL' %}selected{% endif %}>{{ t|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Horário de entrega</label>
+                    <input type="text" name="horario_entrega" class="form-control" placeholder="06:30" maxlength="5"
+                           value="{% if form_data.horario_entrega %}{{ form_data.horario_entrega }}{% else %}06:00{% endif %}">
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <p class="mb-0"><strong>Cliente:</strong> {{ plano.nome_cliente }} &nbsp;|&nbsp; <strong>Tipo:</strong> {{ plano.tipo_plano }} &nbsp;|&nbsp; <strong>Horário:</strong> {{ plano.horario_entrega }}</p>
+                </div>
+                {% endif %}
+                <div class="col-12">
+                    <label class="form-label">Dias de entrega</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for dia in dias_semana %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="dias_entrega" value="{{ dia }}" id="dia_{{ dia }}"
+                                   {% if plano %}{% if dia in plano.dias_entrega %}checked{% endif %}{% elif form_dias %}{% if dia in form_dias %}checked{% endif %}{% endif %}>
+                            <label class="form-check-label" for="dia_{{ dia }}">{{ dia }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Quantidade de pães por dia <span class="text-danger">*</span></label>
+                    <input type="number" name="quantidade_paes_por_dia" class="form-control" min="1" required
+                           value="{% if form_data.quantidade_paes_por_dia %}{{ form_data.quantidade_paes_por_dia }}{% elif plano %}{{ plano.quantidade_paes_por_dia }}{% else %}1{% endif %}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Valor por pão (R$) <span class="text-danger">*</span></label>
+                    <input type="text" name="valor_por_pao" class="form-control" placeholder="0,00" required
+                           value="{% if form_data.valor_por_pao %}{{ form_data.valor_por_pao }}{% elif plano %}{{ plano.valor_por_pao }}{% endif %}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Data de pagamento <span class="text-danger">*</span></label>
+                    <input type="date" name="data_pagamento" class="form-control" required
+                           value="{% if form_data.data_pagamento %}{{ form_data.data_pagamento }}{% elif plano.data_pagamento_iso %}{{ plano.data_pagamento_iso }}{% endif %}">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">{% if plano %}Atualizar{% else %}Salvar{% endif %}</button>
+                <a href="{% url 'estoque_app:paes_planos_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

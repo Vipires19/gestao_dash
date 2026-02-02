@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Caixas em Estoque - Operação{% endblock %}
+{% block page_title %}Caixas em Estoque{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Filtros -->
+<div class="card card-dashboard mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-0">Produto</label>
+                <input type="text" name="produto" class="form-control form-control-sm" value="{{ filtro_produto }}" placeholder="Nome do produto">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Fornecedor</label>
+                <select name="fornecedor_id" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for f in fornecedores %}
+                    <option value="{{ f.id }}" {% if filtro_fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="EM_ESTOQUE" {% if filtro_status == 'EM_ESTOQUE' %}selected{% endif %}>Em estoque</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        {% if caixas %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Caixa</th>
+                        <th>Valor/kg</th>
+                        <th>Fornecedor</th>
+                        <th>Data entrada</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in caixas %}
+                    <tr>
+                        <td>{{ c.codigo_caixa|default:"—" }} — {{ c.produto_base }} — {{ c.peso_atual_kg }} kg</td>
+                        <td>R$ {{ c.valor_kg|floatformat:2 }}</td>
+                        <td>{{ c.nome_fornecedor }}</td>
+                        <td>{{ c.data_entrada_fmt }}</td>
+                        <td><span class="badge bg-success">{{ c.status }}</span></td>
+                        <td><a href="{% url 'estoque_app:caixa_detail' c.id %}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma caixa encontrada.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

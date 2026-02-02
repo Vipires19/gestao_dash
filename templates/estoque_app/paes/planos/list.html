@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Pães — Planos de entrega{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:paes_planos_novo' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> Novo plano
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for tipo_key, tipo_label, ativos in secoes %}
+<div class="card card-dashboard mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ tipo_label }}</h5>
+    </div>
+    <div class="card-body">
+        {% if ativos.ativos or ativos.em_atraso or ativos.cancelados %}
+        <div class="row">
+            <div class="col-md-4">
+                <h6 class="text-success">Ativos</h6>
+                {% if ativos.ativos %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Dias</th>
+                                <th>Horário</th>
+                                <th>Qtd/dia</th>
+                                <th>Valor total</th>
+                                <th>Pagamento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in ativos.ativos %}
+                            <tr>
+                                <td>{{ p.nome_cliente }}</td>
+                                <td>{{ p.dias_entrega|join:", "|default:"—" }}</td>
+                                <td>{{ p.horario_entrega|default:"—" }}</td>
+                                <td>{{ p.quantidade_paes_por_dia }}</td>
+                                <td>R$ {{ p.valor_total_plano|floatformat:2 }}</td>
+                                <td>{{ p.data_pagamento_fmt }} <span class="badge bg-secondary">{{ p.status_pagamento }}</span></td>
+                                <td>
+                                    <a href="{% url 'estoque_app:paes_planos_editar' p.id %}" class="btn btn-sm btn-outline-primary me-1">Editar</a>
+                                    <form method="post" action="{% url 'estoque_app:paes_planos_cancelar' p.id %}" class="d-inline" onsubmit="return confirm('Cancelar este plano?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhum ativo.</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-warning">Em atraso</h6>
+                {% if ativos.em_atraso %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Dias</th>
+                                <th>Valor total</th>
+                                <th>Pagamento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in ativos.em_atraso %}
+                            <tr>
+                                <td>{{ p.nome_cliente }}</td>
+                                <td>{{ p.dias_entrega|join:", "|default:"—" }}</td>
+                                <td>R$ {{ p.valor_total_plano|floatformat:2 }}</td>
+                                <td>{{ p.data_pagamento_fmt }} <span class="badge bg-warning">{{ p.status_pagamento }}</span></td>
+                                <td>
+                                    <a href="{% url 'estoque_app:paes_planos_editar' p.id %}" class="btn btn-sm btn-outline-primary me-1">Editar</a>
+                                    <form method="post" action="{% url 'estoque_app:paes_planos_cancelar' p.id %}" class="d-inline" onsubmit="return confirm('Cancelar este plano?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhum em atraso.</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Cancelados</h6>
+                {% if ativos.cancelados %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-dashboard table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Dias</th>
+                                <th>Valor total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in ativos.cancelados %}
+                            <tr>
+                                <td>{{ p.nome_cliente }}</td>
+                                <td>{{ p.dias_entrega|join:", "|default:"—" }}</td>
+                                <td>R$ {{ p.valor_total_plano|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Nenhum cancelado.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum plano {{ tipo_label|lower }}.</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

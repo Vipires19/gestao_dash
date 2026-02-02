@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Precificação — Emporium Prime{% endblock %}
+{% block page_title %}Precificação — Emporium Prime{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:precificacao_nova' %}" class="btn btn-primary btn-sm me-1"><i class="bi bi-plus-lg me-1"></i> Nova precificação</a>
+<a href="{% url 'estoque_app:precificacao_tabela_pdf' %}" class="btn btn-outline-secondary btn-sm" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i> Tabela de Preços (PDF)</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Produtos comerciais ativos</h5>
+        {% if precificacoes %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produto base</th>
+                        <th>Tipo</th>
+                        <th>Nome comercial</th>
+                        <th>Preço/kg (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in precificacoes %}
+                    <tr>
+                        <td>{{ p.produto_base }}</td>
+                        <td><span class="badge {% if p.tipo == 'CAIXA' %}bg-info{% else %}bg-primary{% endif %}">{{ p.tipo }}</span></td>
+                        <td>{{ p.nome_comercial }}</td>
+                        <td>R$ {{ p.preco_venda_kg|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma precificação ativa. <a href="{% url 'estoque_app:precificacao_nova' %}">Criar precificação</a>.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

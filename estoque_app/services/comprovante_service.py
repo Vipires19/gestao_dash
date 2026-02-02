@@ -130,3 +130,152 @@ def gerar_comprovante_pdf(venda: Dict[str, Any]) -> BytesIO:
     # Retorna o buffer
     buffer.seek(0)
     return buffer
+
+
+def gerar_comprovante_emporium_pdf(venda: Dict[str, Any]) -> BytesIO:
+    """
+    Gera comprovante em PDF para vendas Emporium Prime (processados ou atacado).
+    Layout: Emporium Prime, número, data, tipo; tabela Produto / Peso ou Qtd / Unitário / Subtotal; total.
+    Não exibe custo, lucro ou divisão de lucro.
+
+    Args:
+        venda: Dict normalizado com numero_venda, data_venda, tipo_venda_label, itens, valor_total_venda.
+              itens: lista de { nome, quantidade, valor_unitario, valor_total }
+
+    Returns:
+        BytesIO com o conteúdo do PDF
+    """
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    margin_left = 20 * mm
+    margin_top = height - 30 * mm
+    line_height = 6 * mm
+    current_y = margin_top
+
+    # Cabeçalho — Nome do negócio
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(margin_left, current_y, "Emporium Prime")
+    current_y -= line_height * 1.2
+
+    p.setFont("Helvetica", 10)
+    numero = venda.get("numero_venda", "")
+    p.drawString(margin_left, current_y, f"Número da venda: {numero}")
+    current_y -= line_height
+
+    data_venda = venda.get("data_venda")
+    if isinstance(data_venda, datetime):
+        data_str = data_venda.strftime("%d/%m/%Y")
+    elif hasattr(data_venda, "strftime"):
+        data_str = data_venda.strftime("%d/%m/%Y")
+    elif isinstance(data_venda, str):
+        data_str = data_venda[:10] if len(data_venda) >= 10 else data_venda
+    else:
+        data_str = "—"
+    p.drawString(margin_left, current_y, f"Data da venda: {data_str}")
+    current_y -= line_height
+
+    tipo_label = venda.get("tipo_venda_label", "Venda")
+    p.drawString(margin_left, current_y, f"Tipo da venda: {tipo_label}")
+    current_y -= line_height * 1.5
+
+    p.line(margin_left, current_y, width - margin_left, current_y)
+    current_y -= line_height
+
+    # Cabeçalho da tabela
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(margin_left, current_y, "PRODUTO")
+    p.drawString(margin_left + 75 * mm, current_y, "QTD/PESO")
+    p.drawString(margin_left + 105 * mm, current_y, "UNITÁRIO")
+    p.drawString(margin_left + 140 * mm, current_y, "SUBTOTAL")
+    current_y -= line_height
+    p.line(margin_left, current_y, width - margin_left, current_y)
+    current_y -= line_height * 0.5
+
+    # Itens
+    p.setFont("Helvetica", 9)
+    itens = venda.get("itens", [])
+    for item in itens:
+        nome = (item.get("nome") or "")[:45]
+        quantidade = item.get("quantidade", "")
+        valor_unitario = float(item.get("valor_unitario", 0))
+        valor_total = float(item.get("valor_total", 0))
+        p.drawString(margin_left, current_y, nome)
+        p.drawString(margin_left + 75 * mm, current_y, str(quantidade))
+        p.drawString(margin_left + 105 * mm, current_y, f"R$ {valor_unitario:.2f}")
+        p.drawString(margin_left + 140 * mm, current_y, f"R$ {valor_total:.2f}")
+        current_y -= line_height
+        if current_y < 50 * mm:
+            p.showPage()
+            current_y = height - 30 * mm
+            p.setFont("Helvetica", 9)
+
+    current_y -= line_height * 0.5
+    p.line(margin_left, current_y, width - margin_left, current_y)
+    current_y -= line_height
+
+    # Valor total
+    p.setFont("Helvetica-Bold", 12)
+    valor_total_venda = float(venda.get("valor_total_venda", 0))
+    p.drawString(margin_left + 105 * mm, current_y, "TOTAL:")
+    p.drawString(margin_left + 140 * mm, current_y, f"R$ {valor_total_venda:.2f}")
+
+    current_y -= line_height * 2
+    p.setFont("Helvetica", 8)
+    p.drawString(margin_left, current_y, "Obrigado pela sua compra!")
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+
+def gerar_tabela_precos_pdf(itens: list) -> BytesIO:
+    """
+    Gera PDF da tabela de preços (produtos comerciais ativos Emporium Prime).
+    itens: lista de dict com nome_comercial, tipo, preco_venda_kg.
+    """
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    margin_left = 20 * mm
+    margin_top = height - 30 * mm
+    line_height = 6 * mm
+    current_y = margin_top
+
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(margin_left, current_y, "Emporium Prime — Tabela de Preços")
+    current_y -= line_height * 1.5
+    p.setFont("Helvetica", 10)
+    p.drawString(margin_left, current_y, f"Gerado em: {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}")
+    current_y -= line_height * 1.5
+    p.line(margin_left, current_y, width - margin_left, current_y)
+    current_y -= line_height
+
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(margin_left, current_y, "Produto")
+    p.drawString(margin_left + 90 * mm, current_y, "Tipo")
+    p.drawString(margin_left + 120 * mm, current_y, "Preço/kg (R$)")
+    current_y -= line_height
+    p.line(margin_left, current_y, width - margin_left, current_y)
+    current_y -= line_height * 0.5
+
+    p.setFont("Helvetica", 9)
+    for item in itens:
+        nome = (item.get("nome_comercial") or "")[:45]
+        tipo = item.get("tipo", "")
+        preco = float(item.get("preco_venda_kg", 0))
+        p.drawString(margin_left, current_y, nome)
+        p.drawString(margin_left + 90 * mm, current_y, tipo)
+        p.drawString(margin_left + 120 * mm, current_y, f"R$ {preco:.2f}")
+        current_y -= line_height
+        if current_y < 50 * mm:
+            p.showPage()
+            current_y = height - 30 * mm
+            p.setFont("Helvetica", 9)
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer

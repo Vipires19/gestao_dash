@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Títulos pendentes - Financeiro{% endblock %}
+{% block page_title %}Financeiro — Títulos pendentes{% endblock %}
+
+{% block navbar_actions %}
+<a href="{% url 'estoque_app:titulos_pagos' %}" class="btn btn-outline-secondary btn-sm me-1">
+    <i class="bi bi-check2-circle me-1"></i> Títulos pagos
+</a>
+<a href="{% url 'estoque_app:financeiro_emporium_dashboard' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-graph-up me-1"></i> Dashboard Emporium
+</a>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="alert alert-dismissible fade show mb-3" role="alert">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card card-dashboard">
+    <div class="card-header">
+        <h5 class="mb-0">Obrigações pendentes de pagamento</h5>
+        <small class="text-muted">Títulos gerados automaticamente pelas entradas de estoque.</small>
+    </div>
+    <div class="card-body">
+        {% if titulos %}
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data entrada</th>
+                        <th>Fornecedor</th>
+                        <th>Nº NF-e</th>
+                        <th>Valor</th>
+                        <th>Vencimento</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in titulos %}
+                    <tr>
+                        <td>{{ t.data_entrada_fmt|default:"—" }}</td>
+                        <td>{{ t.nome_fornecedor|default:"—" }}</td>
+                        <td>{{ t.nf_numero|default:"—" }}</td>
+                        <td>R$ {{ t.valor|floatformat:2 }}</td>
+                        <td>{{ t.data_vencimento_fmt|default:"—" }}</td>
+                        <td>
+                            <form method="post" action="{% url 'estoque_app:titulo_registrar_pagamento' t.id %}" class="d-inline-flex align-items-center gap-2">
+                                {% csrf_token %}
+                                <input type="date" name="data_pagamento" class="form-control form-control-sm" style="width: auto;" value="{{ hoje|default:'' }}" title="Data do pagamento">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="bi bi-check-lg me-1"></i> Registrar pagamento
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum título pendente. Os títulos são criados automaticamente ao registrar uma entrada de estoque.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

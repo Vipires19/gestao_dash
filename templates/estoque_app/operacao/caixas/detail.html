@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Caixa {{ caixa.id|slice:":8" }}… - Operação{% endblock %}
+{% block page_title %}Detalhe da caixa{% endblock %}
+
+{% block content %}
+<div class="card card-dashboard mb-4">
+    <div class="card-header"><h5 class="mb-0">Dados da caixa</h5></div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Código caixa</dt>
+            <dd class="col-sm-9">{{ caixa.codigo_caixa|default:"—" }}</dd>
+            <dt class="col-sm-3">Produto base</dt>
+            <dd class="col-sm-9">{{ caixa.produto_base }}</dd>
+            <dt class="col-sm-3">Fornecedor</dt>
+            <dd class="col-sm-9">{{ caixa.nome_fornecedor }}</dd>
+            <dt class="col-sm-3">NF-e</dt>
+            <dd class="col-sm-9">
+                {% if caixa.nf_numero %}{{ caixa.nf_numero }}{% else %}—{% endif %}
+                {% if caixa.nf_arquivo %}
+                <a href="{% url 'estoque_app:caixa_nf_download' caixa.id %}" class="btn btn-sm btn-outline-primary ms-2">Download NF-e</a>
+                {% endif %}
+            </dd>
+            <dt class="col-sm-3">Peso inicial (kg)</dt>
+            <dd class="col-sm-9">{{ caixa.peso_inicial_kg }}</dd>
+            <dt class="col-sm-3">Peso atual (kg)</dt>
+            <dd class="col-sm-9">{{ caixa.peso_atual_kg }}</dd>
+            <dt class="col-sm-3">Valor/kg</dt>
+            <dd class="col-sm-9">R$ {{ caixa.valor_kg|floatformat:2 }}</dd>
+            <dt class="col-sm-3">Valor total da caixa</dt>
+            <dd class="col-sm-9">R$ {{ caixa.valor_total_caixa|floatformat:2 }}</dd>
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9"><span class="badge bg-success">{{ caixa.status }}</span></dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card card-dashboard">
+    <div class="card-header"><h5 class="mb-0">Histórico</h5></div>
+    <div class="card-body">
+        <p class="text-muted mb-0">Nenhum histórico nesta fase.</p>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'estoque_app:caixa_list' %}" class="btn btn-outline-secondary">Voltar para caixas</a>
+</div>
+{% endblock %}
